@@ -1,0 +1,11 @@
+multimethod
+numpy
+
+# documentation
+docnado
+
+# test related
+pytest
+pytest-cov
+pytest-codestyle
+pytest-lazy-fixture
