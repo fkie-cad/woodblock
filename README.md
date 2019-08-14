@@ -29,7 +29,7 @@ The following example should clarify these concepts. Consider for example the tw
 These files can be split into **fragments**. In the example, we split file `A` into two
 fragments, `A.1` and `A.2`. File `B` has not been fragmented.
 
-![two files fragmented](assets/two_files_fragmented.png "two files, A and B, A is fragmented")
+![two files fragmented](documentation/docs/assets/two_files_fragmented.png "two files, A and B, A is fragmented")
 
 If we arrange the fragments of our files, we have a **scenario**:
 
