@@ -126,14 +126,14 @@
         <p>
             
             
-            <small>last updated <span>14 hours ago</span> on <span>2019/08/19</span></small>
+            <small>last updated <span>15 hours ago</span> on <span>2019/08/19</span></small>
         </p>
 
         
             <hr class="my-4">
-            <p>This document is approximately 80% complete.
+            <p>This document is approximately 84% complete.
                 <div class="progress">
-                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  80%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  84%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 </p>
         
@@ -344,6 +344,7 @@ called) are quite common, Woodblock provides a helper function for this, too.
 them into fragments, and orders the fragments for you. Again, there are
 various arguments that you can pass to the function:</p>
 <pre><code class="python">from woodblock.file import intertwine_randomly
+
 # Intertwine three files:
 intertwined = intertwine_randomly(number_of_files=3)
 
@@ -378,6 +379,53 @@ as well as a dictionary containing all of the <code>metadata</code> of the fragm
 <p>Now that we know how to create fragments, let's find out how to create a
 carving test scenario out of them.</p>
 <h3 id="scenarios">Scenarios</h3>
+<p>A <code>Scenario</code> object represents a test scenario for a file carver. That is, it
+consists of a certain number of file fragments arranged in a certain order.
+Moreover, a scenario can contain filler fragments such as the ones described
+above (e.g. <code>ZeroesFragment</code> or <code>RandomDataFragment</code>).</p>
+<p>To create such a scenario using the Woodblock API, simply create an instance
+of the <code>Scenario</code> class:</p>
+<pre><code class="python">scenario = woodblock.scenario.Scenario('A simple scenario')
+</code></pre>
+
+<p>The parameter provided to <code>Scenario</code> is the name of the scenario. This name
+appears in the ground truth files generated and should be as descriptive as
+possible. Have a look at the descriptions used in the
+<a href="http://old.dfrws.org/2007/challenge/layout.shtml">DFRWS 2007 File Image Layout page</a>
+for inspiration.</p>
+<p>After you created a <code>Scenario</code> instance, you can add fragments to it:</p>
+<pre><code class="python">import woodblock
+from woodblock.file import File
+from woodblock.fragments import RandomDataFragment, ZeroesFragment
+
+scenario = woodblock.scenario.Scenario('contiguous file with filler before and after')
+
+scenario.add(ZeroesFragment(size=4096))
+scenario.add(File('some/path/relative/to/the/corpus.jpg').as_fragment())
+scenario.add(RandomDataFragment(size=4096))
+</code></pre>
+
+<p>The example above creates the scenario “contiguous file with filler before 
+and after” consisting of 4096 zero bytes, then the contiguously stored file 
+“some/path/relative/to/the/corpus.jpg”, and finally 4096 bytes of random data.
+The order in which fragments are added to the scenario is the order in which
+these fragments will be written to disk later on.</p>
+<p>The <code>add</code> method does not only take single fragments, but also lists of
+fragments. This is convenient if you are, well, working with lists of
+fragments:</p>
+<pre><code class="python">import woodblock
+from woodblock.file import File
+
+scenario = woodblock.scenario.Scenario('single file with randomly shuffled fragments')
+
+fragments = File('some/file.txt').fragment_randomly(5)
+fragments.reverse()
+
+scenario.add(fragments)
+</code></pre>
+
+<p>This is already everything you need to create a scenario. The next step is to
+add your scenario to an image file which is written to disk.</p>
 <h3 id="images">Images</h3>
 <h3 id="data-generators">Data Generators</h3>
 <h3 id="helpers">Helpers</h3>

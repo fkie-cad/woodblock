@@ -3,7 +3,7 @@ desc:       Woodblock Python API.
 date:       2019/08/19
 template:   document
 nav:        Usage>API __2__
-percent:    80
+percent:    84
 
 For most use cases, the [configuration files](configs.md) should suffice.
 If you need more fine-grained control over your scenarios you can use the
@@ -239,6 +239,7 @@ various arguments that you can pass to the function:
 
 ```python
 from woodblock.file import intertwine_randomly
+
 # Intertwine three files:
 intertwined = intertwine_randomly(number_of_files=3)
 
@@ -280,6 +281,62 @@ Now that we know how to create fragments, let's find out how to create a
 carving test scenario out of them.
 
 ## Scenarios
+A `Scenario` object represents a test scenario for a file carver. That is, it
+consists of a certain number of file fragments arranged in a certain order.
+Moreover, a scenario can contain filler fragments such as the ones described
+above (e.g. `ZeroesFragment` or `RandomDataFragment`).
+
+To create such a scenario using the Woodblock API, simply create an instance
+of the `Scenario` class:
+
+```python
+scenario = woodblock.scenario.Scenario('A simple scenario')
+```
+
+The parameter provided to `Scenario` is the name of the scenario. This name
+appears in the ground truth files generated and should be as descriptive as
+possible. Have a look at the descriptions used in the
+[DFRWS 2007 File Image Layout page](http://old.dfrws.org/2007/challenge/layout.shtml)
+for inspiration.
+
+After you created a `Scenario` instance, you can add fragments to it:
+
+```python
+import woodblock
+from woodblock.file import File
+from woodblock.fragments import RandomDataFragment, ZeroesFragment
+
+scenario = woodblock.scenario.Scenario('contiguous file with filler before and after')
+
+scenario.add(ZeroesFragment(size=4096))
+scenario.add(File('some/path/relative/to/the/corpus.jpg').as_fragment())
+scenario.add(RandomDataFragment(size=4096))
+```
+
+The example above creates the scenario “contiguous file with filler before 
+and after” consisting of 4096 zero bytes, then the contiguously stored file 
+“some/path/relative/to/the/corpus.jpg”, and finally 4096 bytes of random data.
+The order in which fragments are added to the scenario is the order in which
+these fragments will be written to disk later on.
+
+The `add` method does not only take single fragments, but also lists of
+fragments. This is convenient if you are, well, working with lists of
+fragments:
+
+```python
+import woodblock
+from woodblock.file import File
+
+scenario = woodblock.scenario.Scenario('single file with randomly shuffled fragments')
+
+fragments = File('some/file.txt').fragment_randomly(5)
+fragments.reverse()
+
+scenario.add(fragments)
+```
+
+This is already everything you need to create a scenario. The next step is to
+add your scenario to an image file which is written to disk.
 
 ## Images
 
