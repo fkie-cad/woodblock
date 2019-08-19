@@ -131,9 +131,9 @@
 
         
             <hr class="my-4">
-            <p>This document is approximately 75% complete.
+            <p>This document is approximately 80% complete.
                 <div class="progress">
-                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  75%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  80%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 </p>
         
@@ -357,6 +357,26 @@ intertwined = intertwine_randomly(number_of_files=3, min_fragments=3, max_fragme
 
 <p>Note that <code>intertwine_randomly</code> makes sure that fragments of the same
 file are never next to each other.</p>
+<p>All of the different fragmentation functions and methods described above
+create <code>FileFragment</code> objects. A <code>FileFragment</code> represents a fragment of a
+file from your corpus. Additionally, Woodblock provides special fragment types
+for synthetic data. For instance, you can create a region of zero bytes using
+the <code>ZeroesFragment</code>. This is useful, if you want to simulate unused or wiped
+disk areas. Here's how to create a fragment filled with <code>0x00</code> of 4096 bytes
+of size:</p>
+<pre><code class="python">zeroes = woodblock.fragments.ZeroesFragment(size=4096)
+</code></pre>
+
+<p>Creating a fragment of 4096 bytes of size filled with random data is equally
+simple:</p>
+<pre><code class="python">random_data = woodblock.fragments.RandomDataFragment(size=4096)
+</code></pre>
+
+<p>All of the different fragment types have various methods to provide
+information about themselves: you can query the <code>size</code> and the SHA-256 <code>hash</code>
+as well as a dictionary containing all of the <code>metadata</code> of the fragment.</p>
+<p>Now that we know how to create fragments, let's find out how to create a
+carving test scenario out of them.</p>
 <h3 id="scenarios">Scenarios</h3>
 <h3 id="images">Images</h3>
 <h3 id="data-generators">Data Generators</h3>

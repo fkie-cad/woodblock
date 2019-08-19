@@ -3,7 +3,7 @@ desc:       Woodblock Python API.
 date:       2019/08/19
 template:   document
 nav:        Usage>API __2__
-percent:    75
+percent:    80
 
 For most use cases, the [configuration files](configs.md) should suffice.
 If you need more fine-grained control over your scenarios you can use the
@@ -252,6 +252,32 @@ intertwined = intertwine_randomly(number_of_files=3, min_fragments=3, max_fragme
 
 Note that `intertwine_randomly` makes sure that fragments of the same
 file are never next to each other.
+
+All of the different fragmentation functions and methods described above
+create `FileFragment` objects. A `FileFragment` represents a fragment of a
+file from your corpus. Additionally, Woodblock provides special fragment types
+for synthetic data. For instance, you can create a region of zero bytes using
+the `ZeroesFragment`. This is useful, if you want to simulate unused or wiped
+disk areas. Here's how to create a fragment filled with `0x00` of 4096 bytes
+of size:
+
+```python
+zeroes = woodblock.fragments.ZeroesFragment(size=4096)
+```
+
+Creating a fragment of 4096 bytes of size filled with random data is equally
+simple:
+
+```python
+random_data = woodblock.fragments.RandomDataFragment(size=4096)
+```
+
+All of the different fragment types have various methods to provide
+information about themselves: you can query the `size` and the SHA-256 `hash`
+as well as a dictionary containing all of the `metadata` of the fragment.
+
+Now that we know how to create fragments, let's find out how to create a
+carving test scenario out of them.
 
 ## Scenarios
 

@@ -12,6 +12,7 @@ docs:
 proselint:
 	@proselint -c documentation/docs/
 
+
 .PHONY: tests
 tests: unit-tests system-tests
 
