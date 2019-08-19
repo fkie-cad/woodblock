@@ -327,7 +327,7 @@ fragments:
 import woodblock
 from woodblock.file import File
 
-scenario = woodblock.scenario.Scenario('single file with randomly shuffled fragments')
+scenario = woodblock.scenario.Scenario('single file with reversed fragments')
 
 fragments = File('some/file.txt').fragment_randomly(5)
 fragments.reverse()
