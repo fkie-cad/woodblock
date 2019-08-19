@@ -126,7 +126,7 @@
         <p>
             
             
-            <small>last updated <span>8 hours ago</span> on <span>2019/08/14</span></small>
+            <small>last updated <span>14 hours ago</span> on <span>2019/08/19</span></small>
         </p>
 
         
@@ -245,7 +245,118 @@ a more detailed way.</p>
 <h3 id="files-and-fragments">Files and Fragments</h3>
 <p>Files are always selected from a file corpus. Therefore, you have to specify
 the path to your file corpus before you can select any files. This is done
-using the <code>woodblock.files.corpus</code> function.</p>
+using the <code>woodblock.files.corpus</code> function. This function takes the path to
+your file corpus as its only argument. An example call would look like this:</p>
+<pre><code class="python"># You can provide the path using a string...
+woodblock.file.corpus('path/to/your/corpus/')
+# ... or via a pathlib.Path object
+path = pathlib.Path('path/to/your/corpus/')
+woodblock.file.corpus(path)
+</code></pre>
+
+<p>Once you have defined your corpus, you can start using its files. If you do
+not care which exact files to use from your corpus, you can use the
+<code>draw_files</code> function, which randomly chooses the given number of files from
+your corpus. The function lets you not only specify the number of files but
+also the minimal size of each files. Moreover, you can specify if duplicate
+files are allowed or not. Duplicate files are basically two different objects
+pointing to the same original file. Finally, you can indicate that you want
+the files to be drawn only from a special subdirectory of your corpus. The
+following examples show how to use this function:</p>
+<pre><code class="python"># This will give you one randomly chosen file:
+single_file = woodblock.file.draw_files()
+
+# Here is an example with four randomly chosen files:
+files = woodblock.file.draw_files(number_of_files=4)
+
+# Now we want three files, but only from the jpeg/ subdirectory:
+files = woodblock.file.draw_files(path='jpeg', number_of_files=3)
+
+# The same but only files with a minimal size of 2 MB:
+files = woodblock.file.draw_files(path='jpeg', number_of_files=3, min_size=2*1024**2)
+
+# Finally, choose ten files without duplicates:
+files = woodblock.file.draw_files(number_of_files=10, unique=True)
+</code></pre>
+
+<p>Note that <code>draw_files</code> always returns a list of <code>File</code> objects, that is, even
+<code>single_file</code> is a list (with only one item).</p>
+<p><code>File</code> objects represent files from your corpus. If you don't want to use
+<code>draw_files</code> to get your <code>File</code> objects, you can create them manually. This
+allows you to choose specific files from your corpus. To create a <code>File</code>
+object, simply pass the path of the file you want (relative to the corpus)
+to the constructor:</p>
+<pre><code class="python">some_file = woodblock.file.File('some/path/relative/to/the/corpus.jpg')
+</code></pre>
+
+<p><code>File</code> objects provide some methods returning metadata about the file they
+represent. For example, there are the methods <code>size</code>, <code>path</code>, <code>id</code>, and <code>hash</code>
+which return just what you would expect from the names.</p>
+<p>More interesting are the methods used to split a file into fragments. Here, we
+have <code>as_fragment</code>, <code>fragment</code>, <code>fragment_evenly</code>, and <code>fragment_randomly</code>.
+The first one simply converts the file into a single fragment. This is can be
+used, when you want to add a contiguous file to your scenario (<code>Scenario</code>
+objects can only be used with fragments; see below). <code>fragment</code> can be used
+to fragment a file at specific fragmentation points. <code>fragment_evenly</code> and
+<code>fragment_randomly</code> are convenience methods, which split a file into a given
+number of evenly sized fragments or into a given number of randomly sized
+fragments. The following snippet provides some usage examples for the methods
+to fragment a file:</p>
+<pre><code class="python"># some_file as a single fragment:
+contiguous = some_file.as_fragment()
+
+# some_file spit at specific fragmentation points. Fragmentation points are
+# defined with respect to the block_size, i.e. the following example splits
+# the file at bytes 1024, 1536, and 3584:
+fragments = some_file.fragment(fragmentation_points=(2, 3, 7), block_size=512)
+
+# Split some_file into three evenly sized fragments:
+evenly_fragmented = some_file.fragment_evenly(num_fragments=3, block_size=512)
+# or shorter:
+evenly_fragmented = some_file.fragment_evenly(3)
+
+# Split some_file into three fragments at random fragmentation points:
+randomly_fragmented: some_file.fragment_randomly(num_fragments=3, block_size=512)
+# or shorter:
+randomly_fragmented: some_file.fragment_randomly(3)
+</code></pre>
+
+<p>These methods give you a high level of control to create very specific
+fragmentation scenarios. However, if you just want some fragmented files,
+Woodblock has some convenience functions for you. <code>draw_fragmented_files</code>
+basically combines <code>draw_files</code> and <code>File.fragment_randomly</code> and gives you a
+list of fragment lists.</p>
+<pre><code class="python">from woodblock.file import draw_fragmented_files
+
+# Three fragmented files:
+fragments = draw_fragmented_files(number_of_files=3)
+
+# Three fragmented files from the png/large subdirectory:
+fragments = draw_fragmented_files(path='png/large', number_of_files=3)
+
+# Three fragmented files each split into at least three and at most six fragments:
+fragments = draw_fragmented_files(number_of_files=3, min_fragments=3, max_fragments=6)
+</code></pre>
+
+<p>Since scenarios with intertwined files (or braided files as they are sometimes
+called) are quite common, Woodblock provides a helper function for this, too.
+<code>intertwine_randomly</code> chooses a given number of files from your corpus, splits
+them into fragments, and orders the fragments for you. Again, there are
+various arguments that you can pass to the function:</p>
+<pre><code class="python">from woodblock.file import intertwine_randomly
+# Intertwine three files:
+intertwined = intertwine_randomly(number_of_files=3)
+
+# Intertwine three files from the png/large subdirectory:
+intertwined = intertwine_randomly(path='png/large', number_of_files=3)
+
+# Intertwine two files and make sure that each file has
+# at least three and at most six fragments:
+intertwined = intertwine_randomly(number_of_files=3, min_fragments=3, max_fragments=6)
+</code></pre>
+
+<p>Note that <code>intertwine_randomly</code> makes sure that fragments of the same
+file are never next to each other.</p>
 <h3 id="scenarios">Scenarios</h3>
 <h3 id="images">Images</h3>
 <h3 id="data-generators">Data Generators</h3>
@@ -254,7 +365,7 @@ using the <code>woodblock.files.corpus</code> function.</p>
 <p>The following sections provide a brief documentation of the API.</p>
 <h3 id="overview">Overview</h3>
 <h5 id="woodblockfile"><code>woodblock.file</code></h5>
-<table><thead><tr><th>Function/Class/Method</th><th>Purpose</th></tr></thead><tbody><tr><td><code>corpus(path)</code></td><td>Set the file corpus.</td></tr><tr><td><code>get_corpus()</code></td><td>Return the path to the file corpus.</td></tr><tr><td><code>draw_files(path=None, number_of_files=1, unique=False, min_size=0)</code></td><td>Choose random files from the file corpus.</td></tr><tr><td><code>draw_fragmented_files(path=None, number_of_files=1, block_size=512, min_fragments=1, max_fragments=4)</code></td><td>Choose random files from the given path and fragment them randomly.</td></tr><tr><td><code>intertwine_randomly(path=None, number_of_files=2, block_size=512, min_fragments=1, max_fragments=4)</code></td><td>Choose random files from the given path and intertwine them randomly.</td></tr><tr><td><code>File(path=None, number_of_files=1, unique=False, min_size=0)</code></td><td>Represents an actual file of the test file corpus.</td></tr><tr><td><code>File.hash()</code></td><td>Return the SHA-256 hash of the file as hexadecimal string.</td></tr><tr><td><code>File.id()</code></td><td>Return the ID of the file.</td></tr><tr><td><code>File.path()</code></td><td>Return the path of the file relative to the corpus path.</td></tr><tr><td><code>File.size()</code></td><td>Return the file size.</td></tr><tr><td><code>File.as_fragment()</code></td><td>Return the file as a single fragment.</td></tr><tr><td><code>File.max_fragments(block_size)</code></td><td>Return the max. number of fragments which can be created for a given block size.</td></tr><tr><td><code>File.fragment(fragmentation_points, block_size=512)</code></td><td>Fragment the file at the given fragmentation points using the given block size.</td></tr><tr><td><code>File.fragment_evenly(num_fragments, block_size=512)</code></td><td>Fragment the file evenly into the given number of fragment fragments.</td></tr><tr><td><code>File.fragment_randomly(num_fragments=None, block_size=512)</code></td><td>Fragment the file at random fragmentation points.</td></tr></tbody></table><h5 id="woodblockfragments"><code>woodblock.fragments</code></h5>
+<table><thead><tr><th>Function/Class/Method</th><th>Purpose</th></tr></thead><tbody><tr><td><code>corpus(path)</code></td><td>Set the file corpus.</td></tr><tr><td><code>get_corpus()</code></td><td>Return the path to the file corpus.</td></tr><tr><td><code>draw_files(path=None, number_of_files=1, unique=False, min_size=0)</code></td><td>Choose random files from the file corpus.</td></tr><tr><td><code>draw_fragmented_files(path=None, number_of_files=1, block_size=512, min_fragments=1, max_fragments=4)</code></td><td>Choose random files from the given path and fragment them randomly.</td></tr><tr><td><code>intertwine_randomly(path=None, number_of_files=2, block_size=512, min_fragments=1, max_fragments=4)</code></td><td>Choose random files from the given path and intertwine them randomly.</td></tr><tr><td><code>File(path=None)</code></td><td>Represents an actual file of the test file corpus.</td></tr><tr><td><code>File.hash()</code></td><td>Return the SHA-256 hash of the file as hexadecimal string.</td></tr><tr><td><code>File.id()</code></td><td>Return the ID of the file.</td></tr><tr><td><code>File.path()</code></td><td>Return the path of the file relative to the corpus path.</td></tr><tr><td><code>File.size()</code></td><td>Return the file size.</td></tr><tr><td><code>File.as_fragment()</code></td><td>Return the file as a single fragment.</td></tr><tr><td><code>File.max_fragments(block_size)</code></td><td>Return the max. number of fragments which can be created for a given block size.</td></tr><tr><td><code>File.fragment(fragmentation_points, block_size=512)</code></td><td>Fragment the file at the given fragmentation points using the given block size.</td></tr><tr><td><code>File.fragment_evenly(num_fragments, block_size=512)</code></td><td>Fragment the file evenly into the given number of fragment fragments.</td></tr><tr><td><code>File.fragment_randomly(num_fragments=None, block_size=512)</code></td><td>Fragment the file at random fragmentation points.</td></tr></tbody></table><h5 id="woodblockfragments"><code>woodblock.fragments</code></h5>
 <table><thead><tr><th>Function/Class/Method</th><th>Purpose</th></tr></thead><tbody><tr><td><code>FileFragment(file, fragment_number, start_offset, end_offset, chunk_size=8192)</code></td><td>A fragment of an actual file.</td></tr><tr><td><code>FileFragment.hash()</code></td><td>Return the SHA-256 digest as hexadecimal string.</td></tr><tr><td><code>FileFragment.metadata()</code></td><td>Return the fragment metadata.</td></tr><tr><td><code>FileFragment.size()</code></td><td>Return the size of the fragment.</td></tr><tr><td><code>FillerFragment(size, data_generator=None, chunk_size=8192)</code></td><td>A filler fragment.</td></tr><tr><td><code>FillerFragment.hash()</code></td><td>Return the SHA-256 digest as hexadecimal string.</td></tr><tr><td><code>FillerFragment.metadata()</code></td><td>Return the fragment metadata.</td></tr><tr><td><code>FillerFragment.size()</code></td><td>Return the size of the fragment.</td></tr><tr><td><code>RandomDataFragment(size, chunk_size=8192)</code></td><td>A fragment filled with random bytes.</td></tr><tr><td><code>RandomDataFragment.hash()</code></td><td>Return the SHA-256 digest as hexadecimal string.</td></tr><tr><td><code>RandomDataFragment.metadata()</code></td><td>Return the fragment metadata.</td></tr><tr><td><code>RandomDataFragment.size()</code></td><td>Return the size of the fragment.</td></tr><tr><td><code>ZeroesFragment(size, chunk_size=8192)</code></td><td>A fragment filled completely with zero bytes.</td></tr><tr><td><code>ZeroesFragment.hash()</code></td><td>Return the SHA-256 digest as hexadecimal string.</td></tr><tr><td><code>ZeroesFragment.metadata()</code></td><td>Return the fragment metadata.</td></tr><tr><td><code>ZeroesFragment.size()</code></td><td>Return the size of the fragment.</td></tr></tbody></table><h5 id="woodblockscenario"><code>woodblock.scenario</code></h5>
 <table><thead><tr><th>Function/Class/Method</th><th>Purpose</th></tr></thead><tbody><tr><td><code>Scenario(name)</code></td><td>Represents a file carving scenario.</td></tr><tr><td><code>Scenario.add(fragment)</code></td><td>Add a single fragment to the scenario.</td></tr><tr><td><code>Scenario.add(fragments)</code></td><td>Add a list of fragments to the scenario.</td></tr><tr><td><code>Scenario.metadata()</code></td><td>Return the scenario metadata.</td></tr></tbody></table><h5 id="woodblockimage"><code>woodblock.image</code></h5>
 <table><thead><tr><th>Function/Class/Method</th><th>Purpose</th></tr></thead><tbody><tr><td><code>Image(block_size=512, padding_generator=woodblock.datagen.Random())</code></td><td>Represents a carving test image.</td></tr><tr><td><code>Image.add(scenario)</code></td><td>Add a scenario to the image.</td></tr><tr><td><code>Image.from_config(path)</code></td><td>Create an Image instance based on a configuration file.</td></tr><tr><td><code>Image.write(path)</code></td><td>Write the image to disk.</td></tr><tr><td><code>Image.metadata()</code></td><td>Return the image metadata.</td></tr></tbody></table><h3 id="woodblockfile_1">woodblock.file</h3>

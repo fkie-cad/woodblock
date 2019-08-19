@@ -1,6 +1,6 @@
 title:      Woodblock API
 desc:       Woodblock Python API.
-date:       2019/08/14
+date:       2019/08/19
 template:   document
 nav:        Usage>API __2__
 percent:    75
@@ -126,8 +126,132 @@ a more detailed way.
 ## Files and Fragments
 Files are always selected from a file corpus. Therefore, you have to specify
 the path to your file corpus before you can select any files. This is done
-using the `woodblock.files.corpus` function.
+using the `woodblock.files.corpus` function. This function takes the path to
+your file corpus as its only argument. An example call would look like this:
 
+```python
+# You can provide the path using a string...
+woodblock.file.corpus('path/to/your/corpus/')
+# ... or via a pathlib.Path object
+path = pathlib.Path('path/to/your/corpus/')
+woodblock.file.corpus(path)
+```
+
+Once you have defined your corpus, you can start using its files. If you do
+not care which exact files to use from your corpus, you can use the
+`draw_files` function, which randomly chooses the given number of files from
+your corpus. The function lets you not only specify the number of files but
+also the minimal size of each files. Moreover, you can specify if duplicate
+files are allowed or not. Duplicate files are basically two different objects
+pointing to the same original file. Finally, you can indicate that you want
+the files to be drawn only from a special subdirectory of your corpus. The
+following examples show how to use this function:
+
+```python
+# This will give you one randomly chosen file:
+single_file = woodblock.file.draw_files()
+
+# Here is an example with four randomly chosen files:
+files = woodblock.file.draw_files(number_of_files=4)
+
+# Now we want three files, but only from the jpeg/ subdirectory:
+files = woodblock.file.draw_files(path='jpeg', number_of_files=3)
+
+# The same but only files with a minimal size of 2 MB:
+files = woodblock.file.draw_files(path='jpeg', number_of_files=3, min_size=2*1024**2)
+
+# Finally, choose ten files without duplicates:
+files = woodblock.file.draw_files(number_of_files=10, unique=True)
+```
+
+Note that `draw_files` always returns a list of `File` objects, that is, even
+`single_file` is a list (with only one item).
+
+`File` objects represent files from your corpus. If you don't want to use
+`draw_files` to get your `File` objects, you can create them manually. This
+allows you to choose specific files from your corpus. To create a `File`
+object, simply pass the path of the file you want (relative to the corpus)
+to the constructor:
+
+```python
+some_file = woodblock.file.File('some/path/relative/to/the/corpus.jpg')
+```
+
+`File` objects provide some methods returning metadata about the file they
+represent. For example, there are the methods `size`, `path`, `id`, and `hash`
+which return just what you would expect from the names.
+
+More interesting are the methods used to split a file into fragments. Here, we
+have `as_fragment`, `fragment`, `fragment_evenly`, and `fragment_randomly`.
+The first one simply converts the file into a single fragment. This is can be
+used, when you want to add a contiguous file to your scenario (`Scenario`
+objects can only be used with fragments; see below). `fragment` can be used
+to fragment a file at specific fragmentation points. `fragment_evenly` and
+`fragment_randomly` are convenience methods, which split a file into a given
+number of evenly sized fragments or into a given number of randomly sized
+fragments. The following snippet provides some usage examples for the methods
+to fragment a file:
+
+```python
+# some_file as a single fragment:
+contiguous = some_file.as_fragment()
+
+# some_file spit at specific fragmentation points. Fragmentation points are
+# defined with respect to the block_size, i.e. the following example splits
+# the file at bytes 1024, 1536, and 3584:
+fragments = some_file.fragment(fragmentation_points=(2, 3, 7), block_size=512)
+
+# Split some_file into three evenly sized fragments:
+evenly_fragmented = some_file.fragment_evenly(num_fragments=3, block_size=512)
+# or shorter:
+evenly_fragmented = some_file.fragment_evenly(3)
+
+# Split some_file into three fragments at random fragmentation points:
+randomly_fragmented: some_file.fragment_randomly(num_fragments=3, block_size=512)
+# or shorter:
+randomly_fragmented: some_file.fragment_randomly(3)
+```
+
+These methods give you a high level of control to create very specific
+fragmentation scenarios. However, if you just want some fragmented files,
+Woodblock has some convenience functions for you. `draw_fragmented_files`
+basically combines `draw_files` and `File.fragment_randomly` and gives you a
+list of fragment lists.
+
+```python
+from woodblock.file import draw_fragmented_files
+
+# Three fragmented files:
+fragments = draw_fragmented_files(number_of_files=3)
+
+# Three fragmented files from the png/large subdirectory:
+fragments = draw_fragmented_files(path='png/large', number_of_files=3)
+
+# Three fragmented files each split into at least three and at most six fragments:
+fragments = draw_fragmented_files(number_of_files=3, min_fragments=3, max_fragments=6)
+```
+
+Since scenarios with intertwined files (or braided files as they are sometimes
+called) are quite common, Woodblock provides a helper function for this, too.
+`intertwine_randomly` chooses a given number of files from your corpus, splits
+them into fragments, and orders the fragments for you. Again, there are
+various arguments that you can pass to the function:
+
+```python
+from woodblock.file import intertwine_randomly
+# Intertwine three files:
+intertwined = intertwine_randomly(number_of_files=3)
+
+# Intertwine three files from the png/large subdirectory:
+intertwined = intertwine_randomly(path='png/large', number_of_files=3)
+
+# Intertwine two files and make sure that each file has
+# at least three and at most six fragments:
+intertwined = intertwine_randomly(number_of_files=3, min_fragments=3, max_fragments=6)
+```
+
+Note that `intertwine_randomly` makes sure that fragments of the same
+file are never next to each other.
 
 ## Scenarios
 
@@ -152,7 +276,7 @@ The following sections provide a brief documentation of the API.
 | `draw_files(path=None, number_of_files=1, unique=False, min_size=0)` | Choose random files from the file corpus. |
 | `draw_fragmented_files(path=None, number_of_files=1, block_size=512, min_fragments=1, max_fragments=4)` | Choose random files from the given path and fragment them randomly. |
 | `intertwine_randomly(path=None, number_of_files=2, block_size=512, min_fragments=1, max_fragments=4)` | Choose random files from the given path and intertwine them randomly. |
-| `File(path=None, number_of_files=1, unique=False, min_size=0)` | Represents an actual file of the test file corpus. |
+| `File(path=None)`      | Represents an actual file of the test file corpus. |
 | `File.hash()`          | Return the SHA-256 hash of the file as hexadecimal string. |
 | `File.id()`            | Return the ID of the file. |
 | `File.path()`          | Return the path of the file relative to the corpus path. |
