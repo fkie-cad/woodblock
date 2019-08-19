@@ -8,6 +8,10 @@ docs:
 	  docnado --html ../docs/
 
 
+.PHONY: proselint
+proselint:
+	@proselint -c documentation/docs/
+
 .PHONY: tests
 tests: unit-tests system-tests
 

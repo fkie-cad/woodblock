@@ -3,6 +3,7 @@ numpy
 
 # documentation
 docnado
+proselint
 
 # test related
 pytest
