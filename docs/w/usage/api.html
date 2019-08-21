@@ -126,14 +126,14 @@
         <p>
             
             
-            <small>last updated <span>15 hours ago</span> on <span>2019/08/19</span></small>
+            <small>last updated <span>7 hours ago</span> on <span>2019/08/21</span></small>
         </p>
 
         
             <hr class="my-4">
-            <p>This document is approximately 84% complete.
+            <p>This document is approximately 90% complete.
                 <div class="progress">
-                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  84%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  90%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 </p>
         
@@ -427,6 +427,63 @@ scenario.add(fragments)
 <p>This is already everything you need to create a scenario. The next step is to
 add your scenario to an image file which is written to disk.</p>
 <h3 id="images">Images</h3>
+<p><code>Image</code> objects represent actual test files that you can provide as input to
+the carvers you want to evaluate. An image contains one or more scenarios and
+can be written to disk as an actual file. Moreover, when being written an
+additional log file is written containing the ground truth about this image.
+That is, it specifies which files are contained in the image and at which
+offsets their fragments are.</p>
+<p>Creating an <code>Image</code> instance is as easy as:</p>
+<pre><code class="python">import woodblock
+
+# By default an image has a block size of 512 bytes:
+image = woodblock.image.Image()
+
+# But you can change the block size:
+image4k = woodblock.image.Image(block_size=4096)
+</code></pre>
+
+<p>As you can see from the examples above, an image has a fixed block size. This
+means that any fragment in this image is padded to this block size. Consider
+for instance the image and the fragments shown below. The image has a fixed
+block size but the size of the fragments B and A.2 are no multiples of this
+block size.</p>
+<p><img alt="image and fragments without padding" class="noborder" src="../assets/image-padding-01.png" title="image and fragments without padding" /></p>
+<p>The padding introduced by the <code>Image</code> instance will align the fragments to the
+block size specified in the constructor. That is, padding data will be
+appended to B and A.2. This is indicated by the dark gray areas labelled with
+“p”.</p>
+<p><img alt="image and fragments with padding" class="noborder" src="../assets/image-padding-02.png" title="image and fragments with padding" /></p>
+<p>By default, random data is used where padding is required. However, you can
+provide your own data generator when creating your <code>Image</code> instance. For
+example you can use <code>0x00</code> as padding like this:</p>
+<pre><code class="python">zeroes_padding = woodblock.datagen.Zeroes()
+image = woodblock.image.Image(padding_generator=zeroes_padding)
+</code></pre>
+
+<p>The object that you provide as <code>padding_generator</code> has to fulfill the data
+generator interface described in section “Data Generators”.</p>
+<p>After creating an <code>Image</code> instance, you can add scenarios to it. This works in
+the same way as you added fragments to a scenario:</p>
+<pre><code class="python">s1 = woodblock.scenario.Scenario(&quot;first scenario&quot;)
+s2 = woodblock.scenario.Scenario(&quot;second scenario&quot;)
+# add some fragments to the scenarios
+image = woodblock.image.Image()
+image.add(s1)
+image.add(s2)
+</code></pre>
+
+<p>The order of the scenarios in the resulting image corresponds to the order in
+which you added them. Just as before with fragments and scenarios.</p>
+<p>The last step to do is to write the image to disk:</p>
+<pre><code class="python">image.write(pathlib.Path('test-image.dd'))
+</code></pre>
+
+<p>This will not only write all of the scenarios to the image file <code>test-image.dd</code>,
+but it will also write a JSON file containing the ground truth of the image.
+This file will be placed next to the image and will have the same same with
+<code>.json</code> appended. In the example above, you would find your ground truth in
+the file <code>test-image.dd.json</code>.</p>
 <h3 id="data-generators">Data Generators</h3>
 <h3 id="helpers">Helpers</h3>
 <h2 id="api-reference">API Reference</h2>

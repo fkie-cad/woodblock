@@ -1,9 +1,9 @@
 title:      Woodblock API
 desc:       Woodblock Python API.
-date:       2019/08/19
+date:       2019/08/21
 template:   document
 nav:        Usage>API __2__
-percent:    84
+percent:    90
 
 For most use cases, the [configuration files](configs.md) should suffice.
 If you need more fine-grained control over your scenarios you can use the
@@ -339,6 +339,78 @@ This is already everything you need to create a scenario. The next step is to
 add your scenario to an image file which is written to disk.
 
 ## Images
+`Image` objects represent actual test files that you can provide as input to
+the carvers you want to evaluate. An image contains one or more scenarios and
+can be written to disk as an actual file. Moreover, when being written an
+additional log file is written containing the ground truth about this image.
+That is, it specifies which files are contained in the image and at which
+offsets their fragments are.
+
+Creating an `Image` instance is as easy as:
+
+```python
+import woodblock
+
+# By default an image has a block size of 512 bytes:
+image = woodblock.image.Image()
+
+# But you can change the block size:
+image4k = woodblock.image.Image(block_size=4096)
+```
+
+As you can see from the examples above, an image has a fixed block size. This
+means that any fragment in this image is padded to this block size. Consider
+for instance the image and the fragments shown below. The image has a fixed
+block size but the size of the fragments B and A.2 are no multiples of this
+block size.
+
+![image and fragments without padding](../assets/image-padding-01.png "image and fragments without padding"){: .noborder}
+
+The padding introduced by the `Image` instance will align the fragments to the
+block size specified in the constructor. That is, padding data will be
+appended to B and A.2. This is indicated by the dark gray areas labelled with
+“p”.
+
+![image and fragments with padding](../assets/image-padding-02.png "image and fragments with padding"){: .noborder}
+
+By default, random data is used where padding is required. However, you can
+provide your own data generator when creating your `Image` instance. For
+example you can use `0x00` as padding like this:
+
+```python
+zeroes_padding = woodblock.datagen.Zeroes()
+image = woodblock.image.Image(padding_generator=zeroes_padding)
+```
+
+The object that you provide as `padding_generator` has to fulfill the data
+generator interface described in section “Data Generators”.
+
+After creating an `Image` instance, you can add scenarios to it. This works in
+the same way as you added fragments to a scenario:
+
+```python
+s1 = woodblock.scenario.Scenario("first scenario")
+s2 = woodblock.scenario.Scenario("second scenario")
+# add some fragments to the scenarios
+image = woodblock.image.Image()
+image.add(s1)
+image.add(s2)
+```
+
+The order of the scenarios in the resulting image corresponds to the order in
+which you added them. Just as before with fragments and scenarios.
+
+The last step to do is to write the image to disk:
+
+```python
+image.write(pathlib.Path('test-image.dd'))
+```
+
+This will not only write all of the scenarios to the image file `test-image.dd`,
+but it will also write a JSON file containing the ground truth of the image.
+This file will be placed next to the image and will have the same same with
+`.json` appended. In the example above, you would find your ground truth in
+the file `test-image.dd.json`.
 
 ## Data Generators
 
