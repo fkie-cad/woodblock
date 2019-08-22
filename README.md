@@ -4,19 +4,17 @@
 
 # Woodblock – Easy File Carving Test Data Generation
 
-
 The goal of Woodblock is to make it as easy as possible to generate file carving test data
 sets such as the ones created by the [DFRWS](https://www.dfrws.org/) in their
 [2006](http://old.dfrws.org/2006/challenge/) and [2007](http://old.dfrws.org/2007/challenge/)
 challenges or by the ones created by
 [NIST](https://www.nist.gov/itl/ssd/software-quality-group/computer-forensics-tool-testing-program-cftt/cftt-technical-0).
 
-
 ## Basic Features
 
-* Simple configuration files based image creation for most use cases.
-* Easy to use Python API for more complex requirements.
-* Ground truth file in JSON format.
+*  Simple configuration files based image creation for most use cases.
+*  Easy to use Python API for more complex requirements.
+*  Ground truth file in JSON format.
 
 ## Documentation
 
