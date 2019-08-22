@@ -1,4 +1,6 @@
+[![Build Status](https://travis-ci.org/fkie-cad/woodblock.svg?branch=master)](https://travis-ci.org/fkie-cad/woodblock)
 # Woodblock – Easy File Carving Test Data Generation
+
 
 The goal of Woodblock is to make it as easy as possible to generate file carving test data
 sets such as the ones created by the [DFRWS](https://www.dfrws.org/) in their
