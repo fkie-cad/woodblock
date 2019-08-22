@@ -35,6 +35,11 @@ slow-unit-tests:
 	@PYTHONPATH=. py.test --run-slow -m slow tests/unit
 
 
+.PHONY: bandit
+bandit:
+	@bandit -r woodblock
+
+
 .PHONY: cov-report
 cov-report:
 	@coverage report --rcfile=coverage.ini
