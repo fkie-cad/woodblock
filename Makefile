@@ -40,6 +40,11 @@ cov-report:
 	@coverage report --rcfile=coverage.ini
 
 
+.PHONY: pylint
+pylint:
+	@pylint --rcfile=pylintrc woodblock
+
+
 .PHONY: clear-test-output
 clear-test-output:
 	@$(RM) -f .coverage

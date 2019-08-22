@@ -7,6 +7,7 @@ proselint
 
 # test related
 codecov
+pylint
 pytest
 pytest-cov
 pytest-codestyle
