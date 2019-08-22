@@ -134,7 +134,7 @@ class File:
         """
         blocks_in_file = math.floor(self._size / block_size)
         if num_fragments is None:
-            num_fragments = random.randint(1, blocks_in_file)
+            num_fragments = random.randint(1, blocks_in_file)  # nosec
         if self._size < block_size:
             raise InvalidFragmentationPointError(
                 'File "{}" is too small to be fragmented with a block size of {}!'.format(self.path, block_size))
@@ -253,7 +253,7 @@ def draw_fragmented_files(path: pathlib.Path = None, number_of_files: int = 1, b
     files = draw_files(path, number_of_files, min_size=block_size * min_fragments)
     frags = list()
     for file in files:
-        num_frags = random.randint(min_fragments, min(max_fragments, file.max_fragments(block_size)))
+        num_frags = random.randint(min_fragments, min(max_fragments, file.max_fragments(block_size)))  # nosec
         frags.append(file.fragment_randomly(num_frags, block_size))
     return frags
 
@@ -302,7 +302,7 @@ def intertwine_randomly(path: pathlib.Path = None, number_of_files: int = 2, blo
     for file in files[2:]:
         free_slots = len(frags) + 1
         max_frags = min(max_fragments, file.max_fragments(block_size), free_slots)
-        num_frags = random.randint(min_frags, max_frags)
+        num_frags = random.randint(min_frags, max_frags)  # nosec
         current_file_frags = list(reversed(file.fragment_randomly(num_frags, block_size)))
         _insert_at_slots(frags, current_file_frags, _select_free_slots(free_slots, num_frags))
     return frags
@@ -322,16 +322,16 @@ def _get_start_index_for_fragments_of_second_file(num_frags_file_1, num_frags_fi
         return 1
     if num_frags_file_2 == num_frags_file_1 + 1:
         return 0
-    return random.randint(0, 1)
+    return random.randint(0, 1)  # nosec
 
 
 def _fragment_first_file(file_1, block_size, min_fragments, max_fragments):
-    num_frags = random.randint(max(min_fragments, 1), min(max_fragments, file_1.max_fragments(block_size)))
+    num_frags = random.randint(max(min_fragments, 1), min(max_fragments, file_1.max_fragments(block_size)))  # nosec
     return file_1.fragment_randomly(num_frags, block_size)
 
 
 def _fragment_second_file(file_2, block_size, min_fragments, max_fragments, num_fragments_file_1):
-    num_frags = random.randint(max(min_fragments, num_fragments_file_1 - 1),
+    num_frags = random.randint(max(min_fragments, num_fragments_file_1 - 1),  # nosec
                                min(max_fragments, num_fragments_file_1 + 1, file_2.max_fragments(block_size)))
     return file_2.fragment_randomly(num_frags, block_size)
 

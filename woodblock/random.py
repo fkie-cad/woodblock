@@ -15,7 +15,7 @@ class Randomness:
     """
 
     def __init__(self):
-        self._seed = random.randint(0, 2 ** 32 - 1)
+        self._seed = random.randint(0, 2 ** 32 - 1)  # nosec
         self.seed(self._seed)
 
     def seed(self, random_seed: int):  # pylint: disable=redefined-outer-name

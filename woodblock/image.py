@@ -271,7 +271,7 @@ def _parse_frags_nums(section_name: str, section: dict) -> tuple:
 
 
 def _get_filler_fragment_size(min_blocks: int, max_blocks: int, block_size: int) -> int:
-    return random.randint(min_blocks, max_blocks) * block_size
+    return random.randint(min_blocks, max_blocks) * block_size  # nosec
 
 
 def _create_file_fragments(files):
@@ -302,9 +302,9 @@ def _parse_layout_line(line: str) -> list:
     layout = list()
     for token in (x.strip() for x in line.split(',')):
         token = token.lower()
-        if token == 'r':
+        if token == 'r':  # nosec
             layout.append({'type': 'random'})
-        elif token == 'z':
+        elif token == 'z':  # nosec
             layout.append({'type': 'zeroes'})
         else:
             file_num, frag_num = _parse_file_definition(token)

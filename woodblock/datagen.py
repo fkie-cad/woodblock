@@ -18,7 +18,7 @@ class Random:
     """Generates random bytes."""
 
     def __init__(self, rng=RandomBytes()):
-        self._seed = random.randint(0, 2 ** 32 - 1)
+        self._seed = random.randint(0, 2 ** 32 - 1)  # nosec
         self._rng = rng
         self._rng.seed(self._seed)
 
