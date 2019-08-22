@@ -1,9 +1,9 @@
 title:      Woodblock API
 desc:       Woodblock Python API.
-date:       2019/08/21
+date:       2019/08/22
 template:   document
 nav:        Usage>API __2__
-percent:    90
+percent:    95
 
 For most use cases, the [configuration files](configs.md) should suffice.
 If you need more fine-grained control over your scenarios you can use the
@@ -413,6 +413,72 @@ This file will be placed next to the image and will have the same same with
 the file `test-image.dd.json`.
 
 ## Data Generators
+Data generators are objects implementing a certain interface. They are used in
+Woodblock to generate the block padding that is used in an image or within
+TODO for example. The
+interface is quite simple, so it's easy to wirte your own data generators.
+Here is the `Zeroes` data generator class that is already included in Woodblock:
+
+```python
+# You can find this in the module woodblock.datagen
+
+class Zeroes:
+    """Generates zero bytes."""
+
+    def __call__(self, size):
+        return b'\x00' * size
+
+    def __str__(self):
+        return 'zeroes'
+```
+
+As you can see, a data generator has to be callable. For classes this means
+that you have to implement the `__call__` magic method. While this would be
+sufficient to make your data generator work, we highly recommend to implement
+the `__str__` magic method, too. When your data generator is used within one
+of the fragment classes for example, its string representation will be written
+to the ground truth file. So, returning something meaningful from `__str__`
+helps you and others reading and understanding what is within your image.
+
+When data is needed from your data generator, it will be called with a `size`
+argument indicating how many bytes to return. Of course, your data generator
+should return the correct number here. Woodblock expects the data generators
+to always return as many bytes as requested and doesn't do any checking on
+the returned bytes. If your data generator fails to generate the expected
+number of bytes for some reason, you should raise an exception and not return
+any bytes.
+
+You might have noticed, that the interface would also allow you to use a
+“normal” function as data generator. While technically this would work, we
+argue against doing so because your data generator function would not have a
+descriptive string representation. While there are ways to
+[implement a custom string representation](https://stackoverflow.com/a/47452562)
+for your functions, using a class is just simpler.
+
+Here is one more simple implementation of a data generator which generates a
+repeated sequence of bytes:
+
+```python
+class Pattern:
+    """Generate a repeated sequence of bytes."""
+
+    def __init__(self, pattern=b'AB'):
+        self._pattern = pattern
+
+    # a data generator has to be callable => implement the __call__ method
+    def __call__(self, size):
+        it = itertools.cycle(self._pattern)
+        return b''.join(bytes([next(it)]) for _ in range(size))
+
+    # a data generator should have a descriptive __str__ implementation
+    def __str__(self):
+        return 'pattern'
+
+
+# this is how you would use the Pattern data generator to pad an image
+image = woodblock.image.Image(padding_generator=Pattern(b'XO'))
+```
+
 
 ## Helpers
 

@@ -126,14 +126,14 @@
         <p>
             
             
-            <small>last updated <span>7 hours ago</span> on <span>2019/08/21</span></small>
+            <small>last updated <span>8 hours ago</span> on <span>2019/08/22</span></small>
         </p>
 
         
             <hr class="my-4">
-            <p>This document is approximately 90% complete.
+            <p>This document is approximately 95% complete.
                 <div class="progress">
-                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  90%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:  95%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 </p>
         
@@ -485,6 +485,65 @@ This file will be placed next to the image and will have the same same with
 <code>.json</code> appended. In the example above, you would find your ground truth in
 the file <code>test-image.dd.json</code>.</p>
 <h3 id="data-generators">Data Generators</h3>
+<p>Data generators are objects implementing a certain interface. They are used in
+Woodblock to generate the block padding that is used in an image or within
+TODO for example. The
+interface is quite simple, so it's easy to wirte your own data generators.
+Here is the <code>Zeroes</code> data generator class that is already included in Woodblock:</p>
+<pre><code class="python"># You can find this in the module woodblock.datagen
+
+class Zeroes:
+    &quot;&quot;&quot;Generates zero bytes.&quot;&quot;&quot;
+
+    def __call__(self, size):
+        return b'\x00' * size
+
+    def __str__(self):
+        return 'zeroes'
+</code></pre>
+
+<p>As you can see, a data generator has to be callable. For classes this means
+that you have to implement the <code>__call__</code> magic method. While this would be
+sufficient to make your data generator work, we highly recommend to implement
+the <code>__str__</code> magic method, too. When your data generator is used within one
+of the fragment classes for example, its string representation will be written
+to the ground truth file. So, returning something meaningful from <code>__str__</code>
+helps you and others reading and understanding what is within your image.</p>
+<p>When data is needed from your data generator, it will be called with a <code>size</code>
+argument indicating how many bytes to return. Of course, your data generator
+should return the correct number here. Woodblock expects the data generators
+to always return as many bytes as requested and doesn't do any checking on
+the returned bytes. If your data generator fails to generate the expected
+number of bytes for some reason, you should raise an exception and not return
+any bytes.</p>
+<p>You might have noticed, that the interface would also allow you to use a
+“normal” function as data generator. While technically this would work, we
+argue against doing so because your data generator function would not have a
+descriptive string representation. While there are ways to
+<a href="https://stackoverflow.com/a/47452562">implement a custom string representation</a>
+for your functions, using a class is just simpler.</p>
+<p>Here is one more simple implementation of a data generator which generates a
+repeated sequence of bytes:</p>
+<pre><code class="python">class Pattern:
+    &quot;&quot;&quot;Generate a repeated sequence of bytes.&quot;&quot;&quot;
+
+    def __init__(self, pattern=b'AB'):
+        self._pattern = pattern
+
+    # a data generator has to be callable =&gt; implement the __call__ method
+    def __call__(self, size):
+        it = itertools.cycle(self._pattern)
+        return b''.join(bytes([next(it)]) for _ in range(size))
+
+    # a data generator should have a descriptive __str__ implementation
+    def __str__(self):
+        return 'pattern'
+
+
+# this is how you would use the Pattern data generator to pad an image
+image = woodblock.image.Image(padding_generator=Pattern(b'XO'))
+</code></pre>
+
 <h3 id="helpers">Helpers</h3>
 <h2 id="api-reference">API Reference</h2>
 <p>The following sections provide a brief documentation of the API.</p>
