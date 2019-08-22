@@ -3,7 +3,7 @@ desc:       Woodblock Python API.
 date:       2019/08/22
 template:   document
 nav:        Usage>API __2__
-percent:    95
+percent:    100
 
 For most use cases, the [configuration files](configs.md) should suffice.
 If you need more fine-grained control over your scenarios you can use the
