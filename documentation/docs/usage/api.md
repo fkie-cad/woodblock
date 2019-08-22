@@ -479,9 +479,6 @@ class Pattern:
 image = woodblock.image.Image(padding_generator=Pattern(b'XO'))
 ```
 
-
-## Helpers
-
 # API Reference
 
 The following sections provide a brief documentation of the API.
