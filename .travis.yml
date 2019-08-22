@@ -13,3 +13,6 @@ install:
 
 script:
   - make all-tests
+
+after_success:
+  - codecov

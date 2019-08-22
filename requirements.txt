@@ -6,6 +6,7 @@ docnado
 proselint
 
 # test related
+codecov
 pytest
 pytest-cov
 pytest-codestyle
