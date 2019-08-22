@@ -1,0 +1,14 @@
+dist: bionic
+language: python
+python:
+  - 3.6
+  - 3.7
+
+before_install:
+  - pip install -U pip
+
+install:
+  - python3 setup.py install
+
+script:
+  - make all-tests
