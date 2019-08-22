@@ -4,7 +4,6 @@ default: tests
 .PHONY: docs
 docs:
 	@cd documentation && \
-	  docnado --find-orphans && \
 	  docnado --html ../docs/
 
 
@@ -14,11 +13,11 @@ proselint:
 
 
 .PHONY: tests
-tests: unit-tests system-tests
+tests: clear-test-output unit-tests system-tests
 
 
 .PHONY: all-tests
-all-tests: tests slow-unit-tests
+all-tests: clear-test-output tests slow-unit-tests
 
 
 .PHONY: system-tests
@@ -34,3 +33,13 @@ unit-tests:
 .PHONY: slow-unit-tests
 slow-unit-tests:
 	@PYTHONPATH=. py.test --run-slow -m slow tests/unit
+
+
+.PHONY: cov-report
+cov-report:
+	@coverage report --rcfile=coverage.ini
+
+
+.PHONY: clear-test-output
+clear-test-output:
+	@$(RM) -f .coverage
