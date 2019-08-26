@@ -1,6 +1,11 @@
 default: tests
 
 
+.PHONY: init
+init:
+	pip install -r requirements.txt -U
+
+
 .PHONY: package
 package:
 	python setup.py sdist bdist_wheel
