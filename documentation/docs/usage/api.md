@@ -2,7 +2,7 @@ title:      Woodblock API
 desc:       Woodblock Python API.
 date:       2019/08/22
 template:   document
-nav:        Usage>API __2__
+nav:        Usage>API __3__
 percent:    100
 
 For most use cases, the [configuration files](configs.md) should suffice.

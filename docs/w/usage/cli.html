@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     
-    <title>Configuration Files</title>
+    <title>Woodblock CLI</title>
 
 
     <script src="../../lib/jquery-3.2.1.slim.min.js"></script>
@@ -73,7 +73,7 @@
                 
                 <li class="tree-leaf">
                     
-                        <i class="fa fa-circle" aria-hidden="true"></i>
+                        <i class="fa fa-circle-thin" aria-hidden="true"></i>
                     
                     <a href="configs.html"><span>Configuration Files</span></a>
                 </li>
@@ -82,7 +82,7 @@
                 
                 <li class="tree-leaf">
                     
-                        <i class="fa fa-circle-thin" aria-hidden="true"></i>
+                        <i class="fa fa-circle" aria-hidden="true"></i>
                     
                     <a href="cli.html"><span>CLI Application</span></a>
                 </li>
@@ -130,12 +130,12 @@
 
     
     <div class="page-header">
-        <h1 class="display-4">Configuration Files </h1>
-        <p class="lead">Data Set Configuration Files.</p>
+        <h1 class="display-4">Woodblock CLI </h1>
+        <p class="lead">How to use the Woodblock command line application.</p>
         <p>
             
             
-            <small>last updated <span>1 month ago</span> on <span>2019/07/14</span></small>
+            <small>last updated <span>13 hours ago</span> on <span>2019/08/26</span></small>
         </p>
 
         
@@ -144,218 +144,31 @@
     
 
     <div class="page-md">
-        <p>Most test images can be created using configuration files.
-They are easy to write and do not require any coding at all.
-For more complex scenarios not covered by the configuration files, 
-have a look at how to use the <a href="api.html">Woodblock API</a>.</p>
-<h2 id="configuration-file-structure">Configuration File Structure</h2>
-<p>A Woodblock configuration files use a simple INI syntax.
-Here is a simple example with one scenario:</p>
-<pre><code class="ini">[general]
-  block size = 4096
-  seed = 123
-  corpus = ../test_file_corpus/
+        <p>Woodblock comes with a small and simple command line tool. The main 
+purpose of this tool is to generate the actual image files from your 
+<a href="configs.html">configuration files</a>.</p>
+<p>Currently, the help of the <code>woodblock</code> command looks like this:</p>
+<pre><code class="shell">$ woodblock --help
+Usage: woodblock [OPTIONS] COMMAND [ARGS]...
 
-[my first scenario]
-  frags file1 = 3
-  frags file2 = 1
-  frags file3 = 2
-  layout = 1-1, 3-1, 1-2, 2-1, 1-3, 3-2
+Options:
+  -h, --help  Show this message and exit.
+
+Commands:
+  generate  Generate an image based on the given configuration file.
 </code></pre>
 
-<p>The <code>[general]</code> section is mandatory and defines global options for the test
-image to be generated. In the example, we set the block size of the image to
-<code>4096</code> bytes, the seed for the random number generator to <code>123</code>, and the file
-corpus to the <code>../test_file_corpus</code> folder. Note that all paths provided in a
-configuration file are relative to very file.</p>
-<p>In addition to the <code>[general]</code> section, there has to be at least one section
-defining a scenario. Basically, every section except for <code>[general]</code> is 
-considered to be a scenario.</p>
-<h2 id="the-general-section">The <code>[general]</code> Section</h2>
-<p>The <code>[general]</code> section defines global options for the image to be generated.
-Here is an example showing all available options:</p>
-<pre><code class="ini">[general]
-  block size = 512
-  corpus = testfiles/
-  seed = 12345
-  min filler blocks = 1
-  max filler blocks = 10
+<h2 id="generate-image-files">Generate Image Files</h2>
+<p>To generate an image based on a configuration file, use the <code>generate</code>
+subcommand:</p>
+<pre><code class="shell">$ woodblock generate path/to/your/config.conf output/path.dd
 </code></pre>
 
-<h3 id="block-size"><code>block size</code></h3>
-<p><em>Default value:</em> <code>512</code>.<br />
-<em>Required:</em> no</p>
-<p>The <code>block size</code> option defines the block size to be used for the image file.
-When using the configuration file, all fragments of the scenarios will be
-aligned and padded according to this size. The padding will be made up of
-random data.</p>
-<h3 id="corpus"><code>corpus</code></h3>
-<p><em>Default value:</em> <code>None</code><br />
-<em>Required:</em> yes</p>
-<p>The path (relative to the configuration file) to the corpus to be used.</p>
-<h3 id="seed"><code>seed</code></h3>
-<p><em>Default value:</em> randomly generated integer<br />
-<em>Required:</em> no</p>
-<p>The seed for the random number generator. If you do not specify a seed
-explicitly, Woodblock will generate a random seed for you.</p>
-<h3 id="min-filler-blocks"><code>min filler blocks</code></h3>
-<p><em>Default:</em> <code>1</code><br />
-<em>Required:</em> no</p>
-<p>This parameter defines the minimum number of blocks for filler fragments.
-The actual size of a filler fragments will be randomly chosen from the
-interval [<code>min filler blocks</code>, <code>max filler blocks</code>], including both endpoints.</p>
-<h3 id="max-filler-blocks"><code>max filler blocks</code></h3>
-<p><em>Default:</em> <code>10</code><br />
-<em>Required:</em> no</p>
-<p>This parameter defines the maximum number of blocks for filler fragments.
-The actual size of a filler fragments will be randomly chosen from the
-interval [<code>min filler blocks</code>, <code>max filler blocks</code>], including both endpoints.</p>
-<h2 id="scenario-sections">Scenario Sections</h2>
-<p>As already mentioned, every section apart from <code>[general]</code> is considered to be
-a scenario section. As the name implies a scenario section defines a scenario
-to be included in the final image. The name of the section will be the name of
-the scenario and the order of appearance of the sections in the configuration
-file corresponds to the order of the scenarios in the image.</p>
-<p>The supported and required options of a scenario section depend on the layout
-type of the scenario you want to generate.</p>
-<h4 id="layout"><code>layout</code></h4>
-<p><em>Default:</em> <code>None</code><br />
-<em>Required:</em> yes</p>
-<p>As the name implies, this option defines the layout of the scenario. It can be
-either <code>intertwine</code> to create intertwined scenarios or a comma-separated list
-of <em>fragment identifiers</em>. We will cover both options in the next sections in
-more details.</p>
-<h3 id="creating-intertwined-scenarios">Creating Intertwined Scenarios</h3>
-<p>Creating intertwined scenarios is really easy using the configuration file.
-All you have to do is provide the number of files that you want to have.
-Optionally, you can specify the minimal and maximal number of fragments per
-file.</p>
-<p>A complete section for an intertwined scenario looks like this:</p>
-<pre><code class="ini">[An intertwined scenario]
-  layout = intertwine
-  num files = 4
-  min frags = 2
-  max frags = 5
-</code></pre>
-
-<p>An intertwined scenario created with a section like the one above will have
-the following properties.</p>
-<ul>
-<li>There will be <code>num files</code> files in the scenario.</li>
-<li>Each of these files will be split into [<code>min frags</code>, <code>max frags</code>] fragments (endpoints are included).</li>
-<li>The fragments of each file will be in order, i.e. fragment 1 comes before fragment 2 which comes before fragment 3 and so on.</li>
-<li>No two fragments of the same file will be adjacent to one other.</li>
-</ul>
-<h4 id="layout_1"><code>layout</code></h4>
-<p>In order to have Woodblock create an intertwined scenario for you, the
-<code>layout</code> option has to be set to <code>intertwine</code>.</p>
-<h4 id="num-files"><code>num files</code></h4>
-<p><em>Default:</em> <code>None</code><br />
-<em>Required:</em> yes</p>
-<p>This options defines the number of files to include in the scenario. Note that
-it is not possible to specify specific files here. Instead, Woodblock will
-randomly pick files which can be fragmented according to your <code>min frags</code> and
-<code>max frags</code> constraints.</p>
-<h4 id="min-frags"><code>min frags</code></h4>
-<p><em>Default:</em> <code>1</code><br />
-<em>Required:</em> no</p>
-<p>This option defines the minimal number of fragments to split a file into.</p>
-<h4 id="max-frags"><code>max frags</code></h4>
-<p><em>Default:</em> <code>4</code><br />
-<em>Required:</em> no</p>
-<p>This option defines the maximal number of fragments to split a file into. Note
-that <code>max frags</code> has to be &ge; <code>min frags</code>.</p>
-<h3 id="manually-specifying-the-scenario-layout">Manually Specifying the Scenario Layout</h3>
-<p>If you are not creating an intertwined scenario, you have to specify the
-layout of the scenario yourself. This is, however, almost as easy as using
-the <code>intertwine</code> keyword.</p>
-<p>Here is an example for a simple scenario:</p>
-<pre><code class="ini">[A Simple Scenario]
-  frags file1 = 2
-  frags file2 = 3
-  layout = 1.1, 2.3, 2.2, 1.2, 2.1
-</code></pre>
-
-<p>This definition randomly chooses two files from the corpus, splits the first
-one into two fragments and the second into three, and generates the following
-fragment order:</p>
-<p><img alt="simple scenario layout" class="noborder" src="../assets/usage-simple-scenario-layout.png" title="a simple scenario layout" /></p>
-<p>Note that the size of the individual fragments is chosen randomly as a
-multiple of the block size defined in the general section.</p>
-<p>So, how did this work? The option <code>frags fileN</code> tell Woodblock to pick file <code>N</code>
-and split it into the corresponding number of fragments. <code>N</code> has to be an integer
-and refers to the <code>N</code><sup>th</sup> file in the scenario. As we did not define a
-specifiy file (more on this later), random files from the corpus will be picked.
-Then, in the <code>layout</code> line, we defined the fragment order, that we would like
-to have. The order is a comma-separated list of <em>fragment identifiers</em>. A
-fragment identifier is composed of the file number and the fragments number,
-separated by either a dot (<code>.</code>) or a hyphen (<code>-</code>). That is, if you would like
-to reference the fourth fragment of the second file, then you could write
-either <code>2.4</code> or <code>2-4</code>.</p>
-<p>If you want to specify which files Woodblock should use, you can do this using
-the <code>fileN</code> option. For instance, if you want one random file and one specific
-file, then you could modify the above configuration:</p>
-<pre><code class="ini">[A Simple Scenario]
-  file2 = path/to/some/file.jpg
-  frags file1 = 2
-  frags file2 = 3
-  layout = 1.1, 2.3, 2.2, 1.2, 2.1
-</code></pre>
-
-<p>Adding the <code>file2</code> option, tells Woodblock to choose the file <code>path/to/some/file.jpg</code>
-as the second file. The path is relative to the file corpus defined in the
-<code>[general]</code> section. The first file will still be chosen randomly.</p>
-<h3 id="filler-fragments">Filler Fragments</h3>
-<p>Filler fragments can be added by adding an <code>R</code> or <code>Z</code> to the <code>layout</code> of the
-scenario (both, upper and lower case letters work). <code>R</code> adds a random data
-fragment and <code>Z</code> adds a fragment filled with zeroes. As described in the
-<code>[general]</code> section, the size of the filler fragment depends on the values
-of <code>min filler blocks</code> and <code>max filler blocks</code>. These can be specified in
-the <code>[general]</code> section as well as in a scenario section. The definition in
-a scenario section has precedence over a definition in the <code>[general]</code>
-section.</p>
-<p>Here is a simple scenario definition with fillers:</p>
-<pre><code class="ini">[A Simple Scenario with Filler]
-  frags file1 = 2
-  layout = 1.1, R, 1.2, Z
-</code></pre>
-
-<p>This creates a scenario looking like this:</p>
-<p><img alt="scenario layout with fillers" class="noborder" src="../assets/file_with_fillers.png" title="scenario layout with fillers" /></p>
-<p>We have the first fragment of the file, then some random data, then
-the second fragment, and finally some blocks filled with zeroes.</p>
-<h3 id="multiple-scenarios">Multiple Scenarios</h3>
-<p>As already mentioned, every section except for the one named <code>[general]</code>
-is considered to be a scenario. Therefore, defining multiple scenarios boils
-down to creating multiple sections in a configuration file:</p>
-<p>Here is an example defining three scenarios:</p>
-<pre><code class="ini">[First Scenario]
-  frags file1 = 2
-  layout = 1.1, R, 1.2, Z
-
-[Second Scenario]
-  file2 = path/to/some/file.jpg
-  frags file1 = 2
-  frags file2 = 3
-  layout = 1.1, 2.3, 2.2, 1.2, 2.1
-
-[Last Scenario]
-  layout = intertwine
-  num files = 4
-  min frags = 2
-  max frags = 5
-</code></pre>
-
-<p>Again, the order of the scenarios in the resulting test image corresponds
-to the order of the definition in the configuration file.</p>
-<p>Note that Woodblock will not add any additional blocks between two scenarios.
-That is, the first block of the second scenario will be next to the last block
-of the first scenario. If you would like to have filler blocks between two
-scenarios, you have to add filler blocks to the beginning or end of a scenario.</p>
-<h3 id="option-reference">Option Reference</h3>
-<p>This sections provides a brief description of all the options available in a
-scenario section.</p>
-<table><thead><tr><th>Option</th><th>Required</th><th>Default</th><th>Layout Type</th><th>Description</th></tr></thead><tbody><tr><td><code>fileN</code></td><td>no</td><td><em>n/a</em></td><td>manual</td><td>Path to the <code>N</code><sup>th</sup> file to use. Path is relative to the file corpus.</td></tr><tr><td><code>frags fileN</code></td><td>no</td><td><em>n/a</em></td><td>manual</td><td>Number of fragments to split the <code>N</code><sup>th</sup> into.</td></tr><tr><td><code>layout</code></td><td>yes</td><td><em>n/a</em></td><td>all</td><td>Defines the layout type. It can be either <code>intertwine</code> or a fragment specification.</td></tr><tr><td><code>min frags</code></td><td>no</td><td>1</td><td>intertwine</td><td>Defines the minimal number of fragments per file.</td></tr><tr><td><code>max frags</code></td><td>no</td><td>4</td><td>intertwine</td><td>Defines the maxmial number of fragments per file.</td></tr><tr><td><code>num files</code></td><td>yes</td><td><em>n/a</em></td><td>intertwine</td><td>Defines the number of files to intertwine.</td></tr></tbody></table>
+<p>This generates the image <code>output/path.dd</code> based on the configuration file
+<code>path/to/your/config.conf</code>. Moreover, the ground truth file <code>output/path.dd.json</code>
+will be written. Note that all path definitions in your config are relative to
+the configuration file and not relative to your current working directory, whereas
+all paths given on the command line are relative to your current working directory.</p>
     </div>
 
 
