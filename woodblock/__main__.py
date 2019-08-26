@@ -2,31 +2,29 @@ import argparse
 import pathlib
 import sys
 
+import click
+
 import woodblock
 
-
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv[1:]
-    args = _parse_command_line(argv)
-    if args.command == 'generate':
-        _generate_image_from_config(config=args.config, image_path=args.image, corpus=args.corpus)
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-def _parse_command_line(argv):
-    parser = argparse.ArgumentParser(description='Woodblock file carving generator')
-    subparsers = parser.add_subparsers(title='commands', dest='command')
-    generate_cmd_parser = subparsers.add_parser('generate', help='Generate an image')
-    generate_cmd_parser.add_argument('config', help='Path to the configuration file')
-    generate_cmd_parser.add_argument('corpus', help='Path to the file corpus')
-    generate_cmd_parser.add_argument('image', help='Output path for the image')
-    return parser.parse_args(argv)
+@click.group(context_settings=CONTEXT_SETTINGS)
+def main():
+    pass
 
 
-def _generate_image_from_config(config, image_path, corpus):
-    woodblock.file.corpus(corpus)
-    image = woodblock.image.Image.from_config(pathlib.Path(config))
-    image.write(pathlib.Path(image_path))
+@main.command(name='generate')
+@click.argument('config', type=click.Path(exists=True))
+@click.argument('image', type=click.Path())
+def generate_image(config, image):
+    """Generate an image based on the given configuration file.
+
+    \b
+    CONFIG is the path to the configuration file to use.
+    IMAGE  is the output path of the generated image."""
+    img = woodblock.image.Image.from_config(pathlib.Path(config))
+    img.write(pathlib.Path(image))
 
 
 if __name__ == '__main__':

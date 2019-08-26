@@ -9,6 +9,7 @@ setup(
     url='https://github.com/fkie-cad/woodblock',
     packages=find_packages(),
     install_requires=[
+        'click',
         'multimethod',
         'numpy',
     ],
