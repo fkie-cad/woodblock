@@ -1,5 +1,5 @@
 title:      Woodblock
-desc:       A framwork to generate file carving test sets.
+desc:       A framework to generate file carving test sets.
 date:       2019/07/13
 version:    1.0.0
 template:   document
