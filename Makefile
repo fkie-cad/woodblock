@@ -13,6 +13,7 @@ package:
 
 .PHONY: upload
 upload:
+	twine check dist/*
 	twine upload --skip-existing dist/*
 
 
