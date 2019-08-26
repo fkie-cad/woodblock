@@ -19,5 +19,9 @@ setup(
         ]
     },
     description='A framework to generate file carving test data',
-    zip_safe=False
+    zip_safe=False,
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+    ]
 )
