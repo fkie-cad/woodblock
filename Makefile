@@ -1,6 +1,11 @@
 default: tests
 
 
+.PHONY: package
+package:
+	python setup.py sdist bdist_wheel
+
+
 .PHONY: docs
 docs:
 	@cd documentation && \
