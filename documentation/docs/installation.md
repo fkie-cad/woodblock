@@ -1,19 +1,21 @@
 title:      Installation
 desc:       Woodblock installation guide.
-date:       2019/08/14
+date:       2019/08/26
 template:   document
 nav:        Installation __0__
-percent:    5
+percent:    100
 
-Right now, there is no actual installation process. See below for what we have planned.
-{: .danger}
+# TL;DR
 
-# TLDR;
-
-We are going to publish Woodblock on [PyPI]. This makes installing it as easy as
+Woodblock is available on [PyPI](https://pypi.org/project/woodblock/).
+To install it, simply use `pip`:
 
 ```bash
-pip install --upgrade woodblock
+$ pip install --upgrade woodblock
 ```
 
-However, as indicated above we haven’t done this yet.
+# Installation
+Woodblock requires at least `Python 3.6`. We recommend to install Woodblock into a
+[“virtual environment”](https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments).
+If you have your virtual environment up and running, just use `pip`
+as described above to install Woodblock.
