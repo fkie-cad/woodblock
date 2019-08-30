@@ -20,6 +20,7 @@ The source code of Woodblock is hosted on :fa:`github` `GitHub`_.
    configfiles
    cli
    api
+   groundtruth
    citations
 
 
