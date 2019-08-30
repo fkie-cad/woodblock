@@ -13,6 +13,7 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
+import sphinx_fontawesome
 
 
 # -- Project information -----------------------------------------------------
@@ -31,6 +32,7 @@ release = '0.1.4'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx_fontawesome'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

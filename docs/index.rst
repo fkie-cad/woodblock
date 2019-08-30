@@ -9,6 +9,8 @@ carving test data sets such as the ones created by the `DFRWS`_ in their
 Have a look at the :ref:`overview` to learn about the concepts and to find out
 what you can do with Woodblock.
 
+The source code of Woodblock is hosted on :fa:`github` `GitHub`_.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -33,3 +35,4 @@ Indices and tables
 .. _2006: http://old.dfrws.org/2006/challenge/
 .. _2007: http://old.dfrws.org/2007/challenge/
 .. _NIST: https://www.nist.gov/itl/ssd/software-quality-group/computer-forensics-tool-testing-program-cftt/cftt-technical-0
+.. _GitHub: https://github.com/fkie-cad/woodblock

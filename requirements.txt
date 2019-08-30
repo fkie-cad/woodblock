@@ -6,6 +6,7 @@ numpy
 proselint
 Sphinx>=2.1.0
 sphinx-serve
+sphinx_fontawesome
 sphinx_rtd_theme
 
 # test related
