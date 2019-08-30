@@ -18,7 +18,7 @@ challenges or by the ones created by
 
 ## Documentation
 
-See the project’s [GitHub Pages](https://fkie-cad.github.io/woodblock/) for the complete documentation.
+See our Read the Docs page for the complete documentation.
 
 ## Concepts
 Woodblock borrows most concepts from the DFRWS [2006](http://old.dfrws.org/2006/challenge/)

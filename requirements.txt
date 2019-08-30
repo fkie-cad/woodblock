@@ -3,8 +3,10 @@ multimethod
 numpy
 
 # documentation
-docnado
 proselint
+sphinx
+sphinx-serve
+sphinx_rtd_theme
 
 # test related
 bandit

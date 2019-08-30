@@ -1,3 +1,5 @@
+WOODBLOCK_VERSION := 0.1.4
+
 default: tests
 
 
@@ -19,13 +21,17 @@ upload:
 
 .PHONY: docs
 docs:
-	@cd documentation && \
-	  docnado --html ../docs/
+	@$(MAKE) -C docs/ html
+
+
+.PHONY: serve-docs
+serve-docs: docs
+	@cd docs && sphinx-serve
 
 
 .PHONY: proselint
 proselint:
-	@proselint -c documentation/docs/
+	@proselint -c docs/*.rst
 
 
 .PHONY: tests
@@ -64,6 +70,12 @@ cov-report:
 .PHONY: pylint
 pylint:
 	@pylint --rcfile=pylintrc woodblock
+
+
+.PHONY: version-update
+version-update:
+	@sed -i -r "s/(.*version=').*/\1$(WOODBLOCK_VERSION)',/" setup.py
+	@sed -i -r "s/release .*/release = '$(WOODBLOCK_VERSION)'/" docs/conf.py
 
 
 .PHONY: clear-test-output
