@@ -3,6 +3,8 @@
 /.tox/
 /build/
 /dist/
+/docs/_build/
 /woodblock.egg-info/
 
 __pycache__/
+*.bak
