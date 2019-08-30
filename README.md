@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/fkie-cad/woodblock.svg?branch=master)](https://travis-ci.org/fkie-cad/woodblock)
 [![codecov](https://codecov.io/gh/fkie-cad/woodblock/branch/master/graph/badge.svg)](https://codecov.io/gh/fkie-cad/woodblock)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/330a44b0155f4c989c581485799ae8e9)](https://app.codacy.com/app/0x4d4c/woodblock?utm_source=github.com&utm_medium=referral&utm_content=fkie-cad/woodblock&utm_campaign=Badge_Grade_Settings)
+[![Documentation Status](https://readthedocs.org/projects/woodblock/badge/?version=latest)](https://woodblock.readthedocs.io/en/latest/?badge=latest)
 
 # Woodblock – Easy File Carving Test Data Generation
 
@@ -18,7 +19,7 @@ challenges or by the ones created by
 
 ## Documentation
 
-See our Read the Docs page for the complete documentation.
+Our documentation is hosted on  [Read the Docs](https://woodblock.readthedocs.io/en/latest/index.html).
 
 ## Concepts
 Woodblock borrows most concepts from the DFRWS [2006](http://old.dfrws.org/2006/challenge/)
