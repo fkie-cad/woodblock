@@ -17,10 +17,12 @@ class Zeroes:
 class Random:
     """Generates random bytes."""
 
-    def __init__(self, rng=RandomBytes()):
-        self._seed = random.randint(0, 2 ** 32 - 1)  # nosec
+    def __init__(self, rng=RandomBytes(), seed=None):
+        if not seed:
+            seed = random.randint(0, 2 ** 32 - 1)  # nosec
+        self._seed = seed
         self._rng = rng
-        self._rng.seed(self._seed)
+        self._rng.seed(seed)
 
     def __call__(self, size):
         return self._rng.bytes(size)

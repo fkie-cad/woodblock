@@ -25,10 +25,12 @@ class Image:
         padding_generator: A data generator used to generate padding.
     """
 
-    def __init__(self, block_size: int = 512, padding_generator=woodblock.datagen.Random()):
+    def __init__(self, block_size: int = 512, padding_generator=None, seed=None):
         self._block_size = block_size
         self._scenarios = list()
         self._generate_padding = padding_generator
+        if not self._generate_padding:
+            self._generate_padding = woodblock.datagen.Random(seed=seed)
 
     def add(self, scenario):
         """Add a ``Scenario`` to the image."""
@@ -52,7 +54,7 @@ class Image:
         if 'seed' in general:
             woodblock.random.seed(general['seed'])
         num_filler_blocks = (general['min filler blocks'], general['max filler blocks'])
-        image = Image()
+        image = Image(seed=general['seed'] if 'seed' in general else None)
         for section in config.sections():
             if section != 'general':
                 scenario = _parse_scenario_section(section_name=section, section=config[section],
