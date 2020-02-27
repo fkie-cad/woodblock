@@ -11,7 +11,7 @@ def long_description():
 
 setup(
     name='woodblock',
-    version='0.1.5',
+    version='0.1.6',
     license='MIT',
     author='Fraunhofer FKIE',
     author_email='martin.lambertz@fkie.fraunhofer.de',
@@ -40,4 +40,5 @@ setup(
         'Source': 'https://github.com/fkie-cad/woodblock/',
         'Tracker': 'https://github.com/fkie-cad/woodblock/issues',
     },
+    python_requires='>3.6',
 )

@@ -169,10 +169,10 @@ def _get_max_filler_fragment_blocks(section):
 
 
 def _get_number_of_blocks(section: dict, min_or_max: str):
-    if '{} filler blocks'.format(min_or_max) in section:
-        blocks = int(section['{} filler blocks'.format(min_or_max)])
+    if f'{min_or_max} filler blocks' in section:
+        blocks = int(section[f'{min_or_max} filler blocks'])
         if blocks < 1:
-            raise ImageConfigError('Invalid value for "{} filler blocks": {}.'.format(min_or_max, blocks))
+            raise ImageConfigError(f'Invalid value for "{min_or_max} filler blocks": {blocks}.')
         return blocks
     return None
 
@@ -181,7 +181,7 @@ def _parse_scenario_section(section_name: str, section: dict, num_filler_blocks:
     try:
         layout = _get_layout_type(section)
     except KeyError:
-        raise ImageConfigError('Section [{}] contains no "layout" key.'.format(section_name))
+        raise ImageConfigError(f'Section [{section_name}] contains no "layout" key.')
 
     if layout == 'fragment-sequence':
         return _parse_fragment_sequence_layout(section_name, section, num_filler_blocks, block_size)
@@ -202,8 +202,7 @@ def _parse_intertwine_layout(section_name: str, section: dict, block_size: int):
     try:
         num_files = section['num files']
     except KeyError:
-        raise ImageConfigError(
-            'Section [{}] has an intertwined layout but does not specify "num files".'.format(section_name))
+        raise ImageConfigError(f'Section [{section_name}] has an intertwined layout but does not specify "num files".')
     num_files = int(num_files)
     min_frags, max_frags = _parse_frags_nums(section_name, section)
     scenario.add(woodblock.file.intertwine_randomly(number_of_files=num_files, block_size=block_size,
@@ -235,7 +234,7 @@ def _parse_fragment_sequence_layout(section_name: str, section: dict, num_filler
     max_filler_blocks = _get_max_filler_fragment_blocks(section) or num_filler_blocks[1]
     if min_filler_blocks < 1 or max_filler_blocks < 1 or min_filler_blocks > max_filler_blocks:
         raise ImageConfigError(
-            'Invalid min/max number of fillers blocks: min={}, max={}'.format(min_filler_blocks, max_filler_blocks))
+            f'Invalid min/max number of fillers blocks: min={min_filler_blocks}, max={max_filler_blocks}')
     for fragment in layout:
         if fragment['type'] == 'file':
             scenario.add(file_fragments[fragment['file_num']][fragment['frag_num']])
@@ -255,20 +254,20 @@ def _parse_frags_nums(section_name: str, section: dict) -> tuple:
         try:
             min_frags = int(section['min frags'])
         except ValueError:
-            raise ImageConfigError('"min frags" has to be an integer > 0 in section [{}]'.format(section_name))
+            raise ImageConfigError(f'"min frags" has to be an integer > 0 in section [{section_name}]')
         else:
             if min_frags < 1:
-                raise ImageConfigError('"min frags" has to be an integer > 0 in section [{}]'.format(section_name))
+                raise ImageConfigError(f'"min frags" has to be an integer > 0 in section [{section_name}]')
     if 'max frags' in section:
         try:
             max_frags = int(section['max frags'])
         except ValueError:
-            raise ImageConfigError('"max frags" has to be an integer > 0 in section [{}]'.format(section_name))
+            raise ImageConfigError(f'"max frags" has to be an integer > 0 in section [{section_name}]')
         else:
             if max_frags < 1:
-                raise ImageConfigError('"max frags" has to be an integer > 0 in section [{}]'.format(section_name))
+                raise ImageConfigError(f'"max frags" has to be an integer > 0 in section [{section_name}]')
     if min_frags > max_frags:
-        raise ImageConfigError('"min frags" has to be <= "max frags" in section [{}]'.format(section_name))
+        raise ImageConfigError(f'"min frags" has to be <= "max frags" in section [{section_name}]')
     return min_frags, max_frags
 
 
@@ -297,7 +296,7 @@ def _create_file_fragments(files):
 def _assert_each_file_has_a_defined_num_of_frags(files, section):  # pylint: disable=invalid-name
     for num, file in files.items():
         if file['frags'] is None:
-            raise ImageConfigError('No "frags file{} definition is missing in section "[{}]".'.format(num, section))
+            raise ImageConfigError(f'No "frags file{num} definition is missing in section "[{section}]".')
 
 
 def _parse_layout_line(line: str) -> list:

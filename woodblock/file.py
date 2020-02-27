@@ -137,7 +137,7 @@ class File:
             num_fragments = random.randint(1, blocks_in_file)  # nosec
         if self._size < block_size:
             raise InvalidFragmentationPointError(
-                'File "{}" is too small to be fragmented with a block size of {}!'.format(self.path, block_size))
+                f'File "{self.path}" is too small to be fragmented with a block size of {block_size}!')
         if num_fragments < 1:
             raise InvalidFragmentationPointError('Number of fragments has to be at least 1.')
         if num_fragments > blocks_in_file and not (
@@ -163,7 +163,7 @@ class File:
         blocks_in_file = math.floor(self._size / block_size)
         if self._size < block_size:
             raise InvalidFragmentationPointError(
-                'File is too small to be fragmented with a block size of {}!'.format(block_size))
+                f'File is too small to be fragmented with a block size of {block_size}!')
         if num_fragments < 1:
             raise InvalidFragmentationPointError('Number of fragments has to be at least 1.')
         if num_fragments > blocks_in_file and not (
@@ -184,7 +184,7 @@ class File:
     def _validate_fragmentation_points(self, fragmentation_points, block_size):
         if self._size < block_size:
             raise InvalidFragmentationPointError(
-                'File is too small to be fragmented with a block size of {}!'.format(block_size))
+                f'File is too small to be fragmented with a block size of {block_size}!')
         if not all(isinstance(x, int) for x in fragmentation_points):
             raise InvalidFragmentationPointError('Fragmentation points have to be integers.')
         if 0 in fragmentation_points:
@@ -216,7 +216,7 @@ def draw_files(path: pathlib.Path = None, number_of_files: int = 1, unique: bool
         start_path = start_path / path
     candidates = woodblock.utils.get_file_list(start_path, min_size)
     if not candidates:
-        raise WoodblockError('Given path does not contain enough files with a minimal size of {}.'.format(min_size))
+        raise WoodblockError(f'Given path does not contain enough files with a minimal size of {min_size}.')
     if unique:
         try:
             return list(File(f) for f in random.sample(candidates, k=number_of_files))

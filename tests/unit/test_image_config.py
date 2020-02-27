@@ -170,8 +170,9 @@ def general_section():
 
 @pytest.fixture(params=((5, 7), (2, 2), (1, 1)))
 def general_section_with_filler_sizes(request):
-    return '[general]\nseed = 123\ncorpus = ../corpus/\nmin filler blocks = {}\nmax filler blocks = {}\n\n'.format(
-        request.param[0], request.param[0]
+    return (
+        '[general]\nseed = 123\ncorpus = ../corpus/\n'
+        f'min filler blocks = {request.param[0]}\nmax filler blocks = {request.param[0]}\n\n'
     )
 
 
@@ -260,9 +261,9 @@ def config_with_random_fillers(configs_dir, general_section, scenario_with_rando
 def config_with_fillers_and_sizes_in_general_section(request, configs_dir, scenario_with_zeroes_filler_symbols):
     path = configs_dir / 'fillers-with-sizes-in-general.conf'
     with path.open('w') as config:
-        config.write(
-            '[general]\nseed = 123\ncorpus = ../corpus/\nmin filler blocks = {}\nmax filler blocks = {}\n\n'.format(
-                request.param[0], request.param[1]))
+        config.write((
+            '[general]\nseed = 123\ncorpus = ../corpus/\n'
+            f'min filler blocks = {request.param[0]}\nmax filler blocks = {request.param[1]}\n\n'))
         config.write(scenario_with_zeroes_filler_symbols)
     yield {'config': pathlib.Path(path), 'expected_results': {'min': request.param[0], 'max': request.param[1]}}
     path.unlink()
@@ -275,8 +276,8 @@ def config_with_invalid_sizes_in_general_section(request, configs_dir, scenario_
         config.write('[general]\n'
                      'seed = 123\n'
                      'corpus = ../corpus/\n'
-                     'min filler blocks = {}\n'
-                     'max filler blocks = {}\n\n'.format(request.param[0], request.param[1]))
+                     f'min filler blocks = {request.param[0]}\n'
+                     f'max filler blocks = {request.param[1]}\n\n')
         config.write(scenario_with_zeroes_filler_symbols)
     yield pathlib.Path(path)
     path.unlink()
@@ -289,9 +290,9 @@ def config_with_invalid_sizes_in_scenario_section(request, configs_dir, general_
         config.write(general_section)
         config.write('[invalid block numbers]\n'
                      'frags_file1 = 2\n'
-                     'min filler blocks = {}\n'
-                     'max filler blocks = {}\n'
-                     'layout = 1-1, z, 1-2, R'.format(request.param[0], request.param[1]))
+                     f'min filler blocks = {request.param[0]}\n'
+                     f'max filler blocks = {request.param[1]}\n'
+                     'layout = 1-1, z, 1-2, R')
     yield pathlib.Path(path)
     path.unlink()
 
@@ -307,9 +308,9 @@ def config_with_fillers_and_sizes_in_scenario_section(request, configs_dir):
                      'max filler blocks = 3\n\n'
                      '[scenario]\n'
                      'frags_file1 = 2\n'
-                     'min filler blocks = {}\n'
-                     'max filler blocks = {}\n'
-                     'layout = 1-1, z, 1-2, R'.format(request.param[0], request.param[1]))
+                     f'min filler blocks = {request.param[0]}\n'
+                     f'max filler blocks = {request.param[1]}\n'
+                     'layout = 1-1, z, 1-2, R')
     yield {'config': pathlib.Path(path), 'expected_results': {'min': request.param[0], 'max': request.param[1]}}
     path.unlink()
 
@@ -325,8 +326,8 @@ def config_with_fillers_and_min_size_in_scenario_section(request, configs_dir):
                      'max filler blocks = 100\n\n'
                      '[scenario]\n'
                      'frags_file1 = 2\n'
-                     'min filler blocks = {}\n'
-                     'layout = 1-1, z, 1-2, R'.format(request.param))
+                     f'min filler blocks = {request.param}\n'
+                     'layout = 1-1, z, 1-2, R')
     yield {'config': pathlib.Path(path), 'expected_results': {'max': 100, 'min': request.param}}
     path.unlink()
 
@@ -342,8 +343,8 @@ def config_with_fillers_and_max_size_in_scenario_section(request, configs_dir):
                      'max filler blocks = 3\n\n'
                      '[scenario]\n'
                      'frags_file1 = 2\n'
-                     'max filler blocks = {}\n'
-                     'layout = 1-1, z, 1-2, R'.format(request.param))
+                     f'max filler blocks = {request.param}\n'
+                     'layout = 1-1, z, 1-2, R')
     yield {'config': pathlib.Path(path), 'expected_results': {'min': 2, 'max': request.param}}
     path.unlink()
 
@@ -354,8 +355,8 @@ def config_with_simple_intertwine_layout(request, configs_dir, general_section):
     with path.open('w') as config:
         config.write(general_section)
         config.write('[scenario]\n'
-                     'num files = {}\n'
-                     'layout = intertwine'.format(request.param))
+                     f'num files = {request.param}\n'
+                     'layout = intertwine')
     yield {'path': pathlib.Path(path), 'expected': {'min_frags': 1, 'max_frags': 4, 'num_files': request.param}}
     path.unlink()
 
@@ -371,10 +372,10 @@ def config_with_intertwine_layout_and_fragment_sizes(request, configs_dir, gener
                      'num files = 3\n'
                      'layout = intertwine\n')
         if request.param[0] is not None:
-            config.write('min frags = {}\n'.format(request.param[0]))
+            config.write(f'min frags = {request.param[0]}\n')
             min_frags = request.param[0]
         if request.param[1] is not None:
-            config.write('max frags = {}\n'.format(request.param[1]))
+            config.write(f'max frags = {request.param[1]}\n')
             max_frags = request.param[1]
     yield {'path': pathlib.Path(path), 'expected': {'min_frags': min_frags, 'max_frags': max_frags, 'num_files': 3}}
     path.unlink()
@@ -386,16 +387,16 @@ def config_with_invalid_frag_sizes_in_intertwine_layout(request, configs_dir, ge
     with path.open('w') as config:
         config.write(general_section)
         config.write('[invalid frag numbers]\n'
-                     'min frags = {}\n'
-                     'max frags = {}\n'
+                     f'min frags = {request.param[0]}\n'
+                     f'max frags = {request.param[1]}\n'
                      'num files = 3\n'
-                     'layout = intertwine'.format(request.param[0], request.param[1]))
+                     'layout = intertwine')
     yield pathlib.Path(path)
     path.unlink()
 
 
 @pytest.fixture
-def config_with_intertwine_layout_but_no_num_files(request, configs_dir, general_section):
+def config_with_intertwine_layout_but_no_num_files(configs_dir, general_section):
     path = configs_dir / 'intertwine-without-num-files.conf'
     with path.open('w') as config:
         config.write(general_section)
