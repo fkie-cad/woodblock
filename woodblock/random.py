@@ -18,7 +18,7 @@ class Randomness:
         self._seed = random.randint(0, 2 ** 32 - 1)  # nosec
         self.seed(self._seed)
 
-    def seed(self, random_seed: int):  # pylint: disable=redefined-outer-name
+    def seed(self, random_seed: int):
         """Set the seed.
 
         Args:
@@ -58,6 +58,6 @@ class RandomBytes:  # pylint: disable=too-few-public-methods
         """Set the seed for the RNG.
 
         Args:
-            seed: The seed to use.
+            random_seed: The seed to use.
         """
         self._rng.seed(random_seed)

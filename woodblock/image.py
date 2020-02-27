@@ -25,9 +25,11 @@ class Image:
         padding_generator: A data generator used to generate padding.
     """
 
-    def __init__(self, block_size: int = 512, padding_generator=woodblock.datagen.Random()):
+    def __init__(self, block_size: int = 512, padding_generator=None):
         self._block_size = block_size
         self._scenarios = list()
+        if padding_generator is None:
+            padding_generator = woodblock.datagen.Random()
         self._generate_padding = padding_generator
 
     def add(self, scenario):
