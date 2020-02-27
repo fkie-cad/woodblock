@@ -1,4 +1,4 @@
-WOODBLOCK_VERSION := 0.1.4
+WOODBLOCK_VERSION := 0.1.7
 
 default: tests
 

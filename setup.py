@@ -11,7 +11,7 @@ def long_description():
 
 setup(
     name='woodblock',
-    version='0.1.6',
+    version='0.1.7',
     license='MIT',
     author='Fraunhofer FKIE',
     author_email='martin.lambertz@fkie.fraunhofer.de',

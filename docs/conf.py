@@ -19,11 +19,11 @@ import sphinx_fontawesome
 # -- Project information -----------------------------------------------------
 
 project = 'Woodblock'
-copyright = '2019, Fraunhofer FKIE'
+copyright = '2020, Fraunhofer FKIE'
 author = 'Fraunhofer FKIE'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.4'
+release = '0.1.7'
 
 
 # -- General configuration ---------------------------------------------------
