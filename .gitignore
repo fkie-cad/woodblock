@@ -1,9 +1,11 @@
 /.coverage
 /.idea/
 /.tox/
+/.venv/
 /build/
 /dist/
 /docs/_build/
+/venv/
 /woodblock.egg-info/
 
 __pycache__/
