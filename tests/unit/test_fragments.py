@@ -1,3 +1,4 @@
+import hashlib
 from math import ceil
 
 import pytest
@@ -66,6 +67,15 @@ class TestZeroesFragment:
             print(len(data), len(data2))
             assert data2 == data
 
+    @pytest.mark.parametrize('size', (8191, 8192, 8193, 16384, 20000))
+    def test_that_re_iteration_yields_the_complete_fragment(self, size):
+        # Re-iterating a fragment larger than the chunk size must not truncate the data.
+        fragment = ZeroesFragment(size)
+        first = b''.join(c for c in fragment)
+        second = b''.join(c for c in fragment)
+        assert first == b'\x00' * size
+        assert second == b'\x00' * size
+
 
 class TestRandomDataFragment:
     def test_that_a_size_of_zero_raises_an_error(self):
@@ -101,6 +111,62 @@ class TestRandomDataFragment:
         for _ in range(iterations):
             assert b''.join(c for c in fragment) == data
 
+    @pytest.mark.parametrize('size', (1, 512, 8191, 8192, 8193, 16384, 20000))
+    def test_that_re_iteration_yields_the_complete_fragment(self, size):
+        # Re-iterating a fragment larger than the chunk size must not truncate the data.
+        fragment = RandomDataFragment(size)
+        first = b''.join(c for c in fragment)
+        second = b''.join(c for c in fragment)
+        assert len(first) == size
+        assert len(second) == size
+        assert first == second
+
+    @pytest.mark.parametrize('size, chunk_size', ((512, 100), (16384, 1000), (20000, 8192)))
+    def test_that_re_iteration_with_small_chunks_is_consistent(self, size, chunk_size):
+        fragment = RandomDataFragment(size, chunk_size=chunk_size)
+        first = b''.join(c for c in fragment)
+        second = b''.join(c for c in fragment)
+        assert len(first) == size
+        assert first == second
+
+    @pytest.mark.parametrize('size', (512, 16384))
+    def test_that_the_data_matches_the_hash_on_every_pass(self, size):
+        fragment = RandomDataFragment(size)
+        for _ in range(3):
+            data = b''.join(c for c in fragment)
+            assert hashlib.sha256(data).hexdigest() == fragment.hash
+
+    def test_that_two_fragments_are_independent(self):
+        # Iterating one fragment between two passes over another must not change the other's
+        # bytes or hash. This guards against the generators sharing a single RNG.
+        frag_a = RandomDataFragment(16384)
+        frag_b = RandomDataFragment(16384)
+        a_first = b''.join(c for c in frag_a)
+        a_hash = frag_a.hash
+        b''.join(c for c in frag_b)  # iterate the other fragment in between
+        a_second = b''.join(c for c in frag_a)
+        assert a_second == a_first
+        assert frag_a.hash == a_hash
+        assert a_first != b''.join(c for c in frag_b)
+
+    def test_that_hashing_order_does_not_affect_the_data(self):
+        # Compute every hash first, then read the data in a different order; each fragment's
+        # data must still match its recorded hash.
+        fragments = [RandomDataFragment(size) for size in (512, 9000, 16384, 700)]
+        hashes = [f.hash for f in fragments]
+        for fragment, expected_hash in zip(reversed(fragments), reversed(hashes)):
+            data = b''.join(c for c in fragment)
+            assert hashlib.sha256(data).hexdigest() == expected_hash
+
+    def test_that_a_partially_consumed_fragment_recovers_on_re_iteration(self):
+        fragment = RandomDataFragment(16384)
+        full = b''.join(c for c in fragment)
+        partial_iter = iter(fragment)
+        next(partial_iter)  # consume a single chunk, then abandon the iteration
+        recovered = b''.join(c for c in fragment)
+        assert recovered == full
+        assert len(recovered) == 16384
+
 
 class TestFileFragment:
     def test_that_fragment_is_created_correctly(self, path_test_file_512):
@@ -125,6 +191,22 @@ class TestFileFragment:
             'fragment': {'sha256': '32beecb58a128af8248504600bd203dcc676adf41045300485655e6b8780a01d', 'size': 512,
                          'number': 1, 'file_offsets': {'start': 0, 'end': 512}}
         }
+
+    @pytest.mark.parametrize('chunk_size', (1024, 4096, 8192))
+    def test_that_re_iteration_yields_the_complete_fragment(self, path_test_file_4k, chunk_size):
+        # Re-iterating a file fragment larger than the chunk size must not truncate the data.
+        fragment = FileFragment(File(path_test_file_4k), 1, 0, 4096, chunk_size=chunk_size)
+        first = b''.join(c for c in fragment)
+        second = b''.join(c for c in fragment)
+        assert len(first) == 4096
+        assert len(second) == 4096
+        assert first == second
+
+    def test_that_the_data_matches_the_hash_on_every_pass(self, path_test_file_4k):
+        fragment = FileFragment(File(path_test_file_4k), 1, 0, 4096, chunk_size=1024)
+        for _ in range(3):
+            data = b''.join(c for c in fragment)
+            assert hashlib.sha256(data).hexdigest() == fragment.hash
 
     def test_that_the_correct_hash_is_computed(self, path_test_file_4k):
         assert FileFragment(File(path_test_file_4k), 1, 0,

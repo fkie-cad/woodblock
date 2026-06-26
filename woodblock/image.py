@@ -88,6 +88,10 @@ class Image:
         Args:
             image_handle: A ``.write()``-supporting file-like object.
         """
+        # Reset the padding generator so writing the same image twice yields byte-identical
+        # output. User-supplied padding generators may be plain callables without a reset.
+        if hasattr(self._generate_padding, 'reset'):
+            self._generate_padding.reset()
         for scenario in self._scenarios:
             self._write_scenario(image_handle, scenario)
 
