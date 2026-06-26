@@ -25,6 +25,22 @@ class TestFile:
             with pytest.raises(WoodblockError):
                 File(pathlib.Path(tmp.name))
 
+    @pytest.mark.parametrize('path', ('definitely-missing', 'sub/dir/missing.bin'))
+    def test_that_a_non_existing_file_given_as_a_string_raises_a_file_not_found_error(self, path):
+        with pytest.raises(FileNotFoundError):
+            File(path)
+
+    def test_that_an_existing_file_can_be_given_as_a_string(self, path_test_file_4k):
+        file_from_str = File('4096')
+        assert file_from_str.size == File(path_test_file_4k).size
+        assert file_from_str.path.name == '4096'
+
+    def test_that_string_and_path_inputs_are_equivalent_for_a_missing_file(self):
+        with pytest.raises(FileNotFoundError):
+            File('missing')
+        with pytest.raises(FileNotFoundError):
+            File(pathlib.Path('missing'))
+
     @pytest.mark.parametrize('block_size,expected_frags', (
             (1, 4096), (2, 2048), (512, 8), (1024, 4), (2048, 2), (4096, 1), (4097, 1), (10000, 1)
     ))

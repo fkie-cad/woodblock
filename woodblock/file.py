@@ -48,9 +48,10 @@ class File:
     """
 
     def __init__(self, path: pathlib.Path):
+        path = pathlib.Path(path)
         self._path = get_corpus() / path
         if not self.path.exists():
-            raise FileNotFoundError(path.name)
+            raise FileNotFoundError(self._path)
         self._size = self._path.stat().st_size
         self._id = uuid4().hex
         self._hash = None
