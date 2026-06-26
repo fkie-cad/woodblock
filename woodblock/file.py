@@ -132,12 +132,12 @@ class File:
             num_fragments: Number of fragments to create.
             block_size: Block size to use.
         """
-        blocks_in_file = math.floor(self._size / block_size)
-        if num_fragments is None:
-            num_fragments = random.randint(1, blocks_in_file)  # nosec
         if self._size < block_size:
             raise InvalidFragmentationPointError(
                 f'File "{self.path}" is too small to be fragmented with a block size of {block_size}!')
+        blocks_in_file = math.floor(self._size / block_size)
+        if num_fragments is None:
+            num_fragments = random.randint(1, blocks_in_file)  # nosec
         if num_fragments < 1:
             raise InvalidFragmentationPointError('Number of fragments has to be at least 1.')
         if num_fragments > blocks_in_file and not (

@@ -96,6 +96,32 @@ class TestFragmentFragmentRandomly:
         with pytest.raises(InvalidFragmentationPointError):
             File(path_test_file_4k).fragment_randomly(2, File(path_test_file_4k).size * 2)
 
+    def test_that_a_too_small_file_with_a_random_count_raises_a_clear_error(self, path_test_file_4k):
+        # With num_fragments=None the too-small check must run before the random count is
+        # drawn, otherwise the file size guard never triggers and an unrelated error leaks.
+        with pytest.raises(InvalidFragmentationPointError):
+            File(path_test_file_4k).fragment_randomly(None, File(path_test_file_4k).size * 2)
+
+    def test_that_a_small_file_with_a_random_count_raises_a_clear_error(self, path_test_file_512):
+        with pytest.raises(InvalidFragmentationPointError):
+            File(path_test_file_512).fragment_randomly(None, 1024)
+
+    def test_that_a_block_sized_file_yields_a_single_fragment(self, path_test_file_512):
+        frags = File(path_test_file_512).fragment_randomly(None, 512)
+        assert len(frags) == 1
+
+    def test_that_the_default_arguments_yield_a_single_fragment_for_a_block_sized_file(self, path_test_file_512):
+        frags = File(path_test_file_512).fragment_randomly()
+        assert len(frags) == 1
+
+    @pytest.mark.parametrize('path_fixture', ('path_test_file_2000', 'path_test_file_4k'))
+    def test_that_a_random_count_never_crashes_and_stays_in_range(self, path_fixture, request):
+        path = request.getfixturevalue(path_fixture)
+        file = File(path)
+        for _ in range(50):
+            frags = file.fragment_randomly(None, 512)
+            assert 1 <= len(frags) <= file.max_fragments(512)
+
     @pytest.mark.parametrize('num_fragments', (0, 9, 10, 13))
     def test_that_invalid_num_fragments_raises_an_error(self, num_fragments, path_test_file_4k):
         with pytest.raises(InvalidFragmentationPointError):
