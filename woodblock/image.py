@@ -191,14 +191,28 @@ def _parse_scenario_section(section_name: str, section: dict, num_filler_blocks:
         return _parse_fragment_sequence_layout(section_name, section, num_filler_blocks, block_size)
     if layout == 'intertwine':
         return _parse_intertwine_layout(section_name, section, block_size)
-    raise ImageConfigError('Unsupported layout type: ')
+    raise ImageConfigError(f'Unsupported layout type in section [{section_name}]: "{layout}".')
+
+
+_KEYWORD_LAYOUTS = ('intertwine',)
 
 
 def _get_layout_type(section: dict) -> str:
-    layout = section['layout'].lower()
-    if layout == 'intertwine':
-        return 'intertwine'
-    return 'fragment-sequence'
+    raw = section['layout'].strip()
+    layout = raw.lower()
+    if layout in _KEYWORD_LAYOUTS:
+        return layout
+    if _looks_like_fragment_sequence(layout):
+        return 'fragment-sequence'
+    raise ImageConfigError(
+        f'Unsupported layout type: "{raw}". '
+        'Use "intertwine" or a comma-separated fragment sequence (e.g. "1.1, 2.3, R, Z").')
+
+
+def _looks_like_fragment_sequence(layout: str) -> bool:
+    if ',' in layout:
+        return True
+    return layout in ('r', 'z') or '.' in layout or '-' in layout  # nosec
 
 
 def _parse_intertwine_layout(section_name: str, section: dict, block_size: int):

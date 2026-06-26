@@ -152,6 +152,67 @@ class TestImageConfig:
         with pytest.raises(ImageConfigError):
             Image.from_config(config)
 
+    @pytest.mark.parametrize('layout', ('intertwined', 'interwine', 'intertwin', 'INTERTWINED', 'foo'))
+    def test_that_an_unknown_layout_type_raises_a_clear_error(self, layout, configs_dir, general_section):
+        path = configs_dir / 'unknown-layout.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\nnum files = 3\n')
+            config.write(f'layout = {layout}\n')
+        with pytest.raises(ImageConfigError) as excinfo:
+            Image.from_config(pathlib.Path(path))
+        assert layout in str(excinfo.value)
+        path.unlink()
+
+    @pytest.mark.parametrize('layout', ('INTERTWINE', '  intertwine  ', 'Intertwine'))
+    def test_that_the_intertwine_keyword_is_case_and_whitespace_insensitive(self, layout, configs_dir,
+                                                                            general_section):
+        path = configs_dir / 'intertwine-keyword.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\nnum files = 3\n')
+            config.write(f'layout = {layout}\n')
+        image = Image.from_config(pathlib.Path(path))
+        scenario = image.metadata['scenarios'][0]
+        assert len(scenario['files']) == 3
+        path.unlink()
+
+    @pytest.mark.parametrize('layout', ('1-1', '1.1'))
+    def test_that_a_single_file_reference_layout_works(self, layout, configs_dir, general_section):
+        path = configs_dir / 'single-file-ref-layout.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\nfrags file1 = 1\n')
+            config.write(f'layout = {layout}\n')
+        image = Image.from_config(pathlib.Path(path))
+        scenario = image.metadata['scenarios'][0]
+        assert len(scenario['files']) == 1
+        assert len(scenario['files'][0]['fragments']) == 1
+        path.unlink()
+
+    @pytest.mark.parametrize('layout', ('r', 'R', 'z', 'Z'))
+    def test_that_a_single_filler_layout_works(self, layout, configs_dir, general_section):
+        path = configs_dir / 'single-filler-layout.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n')
+            config.write(f'layout = {layout}\n')
+        image = Image.from_config(pathlib.Path(path))
+        scenario = image.metadata['scenarios'][0]
+        assert len(scenario['files']) == 1
+        assert scenario['files'][0]['original']['type'] == 'filler'
+        path.unlink()
+
+    def test_that_a_malformed_multi_token_sequence_still_raises_an_error(self, configs_dir, general_section):
+        path = configs_dir / 'malformed-sequence-layout.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\nfrags file1 = 1\n')
+            config.write('layout = 1-1, intertwined\n')
+        with pytest.raises(ImageConfigError):
+            Image.from_config(pathlib.Path(path))
+        path.unlink()
+
 
 @pytest.fixture
 def configs_dir(test_data_path):
