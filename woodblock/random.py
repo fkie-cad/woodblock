@@ -18,7 +18,7 @@ class Randomness:
     """
 
     def __init__(self):
-        self._seed = random.randint(0, 2 ** 32 - 1)  # nosec
+        self._seed = random.randint(0, 2**32 - 1)  # nosec
         self.seed(self._seed)
 
     def seed(self, random_seed: int):
@@ -33,7 +33,7 @@ class Randomness:
         """
         if not isinstance(random_seed, int) or isinstance(random_seed, bool):
             raise ValueError(f'Seed must be an integer in [0, 2**32), got {random_seed!r}.')
-        if not 0 <= random_seed < 2 ** 32:
+        if not 0 <= random_seed < 2**32:
             raise ValueError(f'Seed must be an integer in [0, 2**32), got {random_seed}.')
         self._seed = random_seed
         # Only Python's global ``random`` is seeded. Each RandomBytes/Random generator draws its own seed from it
@@ -48,16 +48,16 @@ class Randomness:
 
 _RANDOM = Randomness()
 
-seed = _RANDOM.seed  # pylint: disable=invalid-name
+seed = _RANDOM.seed
 
-get_seed = _RANDOM.get_seed  # pylint: disable=invalid-name
+get_seed = _RANDOM.get_seed
 
 
-class RandomBytes:  # pylint: disable=too-few-public-methods
+class RandomBytes:
     """This class can be used to generate random bytes."""
 
     def __init__(self):
-        self._rng = np.random.RandomState()  # pylint: disable=no-member
+        self._rng = np.random.RandomState()
 
     def bytes(self, size: int):
         """Return ``size`` random bytes.

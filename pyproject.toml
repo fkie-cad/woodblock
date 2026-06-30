@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "woodblock"
+version = "0.1.7"
+description = "A framework to generate file carving test data"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Fraunhofer FKIE", email = "martin.lambertz@fkie.fraunhofer.de" }]
+requires-python = ">=3.11"
+dependencies = [
+    "click",
+    "numpy",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
+[project.urls]
+Homepage = "https://github.com/fkie-cad/woodblock/"
+Documentation = "https://fkie-cad.github.io/woodblock/"
+Source = "https://github.com/fkie-cad/woodblock/"
+Tracker = "https://github.com/fkie-cad/woodblock/issues"
+
+[project.scripts]
+woodblock = "woodblock.__main__:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-lazy-fixtures",
+]
+docs = [
+    "proselint",
+    "Sphinx>=2.1.0",
+    "sphinx-serve",
+    "sphinx_fontawesome",
+    "sphinx_rtd_theme",
+]
+dev = [
+    "woodblock[test,docs]",
+    "bandit",
+    "ruff",
+    "build",
+    "twine",
+]
+
+[tool.setuptools]
+packages = ["woodblock"]
+zip-safe = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# The package __init__ imports submodules purely to expose them as attributes.
+"woodblock/__init__.py" = ["F401"]

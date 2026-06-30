@@ -45,10 +45,21 @@ class FillerFragment:
         """Return the fragment metadata."""
         if self._hash is None:
             self._hash = self._compute_hash()
-        return {'file': {'type': 'filler', 'sha256': self.hash, 'size': self.size, 'path': str(self._generate_data),
-                         'id': self._id},
-                'fragment': {'sha256': self.hash, 'size': self.size, 'number': 1,
-                             'file_offsets': {'start': 0, 'end': self.size}}}
+        return {
+            'file': {
+                'type': 'filler',
+                'sha256': self.hash,
+                'size': self.size,
+                'path': str(self._generate_data),
+                'id': self._id,
+            },
+            'fragment': {
+                'sha256': self.hash,
+                'size': self.size,
+                'number': 1,
+                'file_offsets': {'start': 0, 'end': self.size},
+            },
+        }
 
     def __iter__(self):
         # Reset the full iteration state, not just the hasher, so that every iteration
@@ -160,10 +171,21 @@ class FileFragment:
         """Return the fragment metadata."""
         if self._hash is None:
             self._compute_hash()
-        return {'file': {'type': 'file', 'sha256': self._file.hash, 'size': self._file.size,
-                         'path': str(self._file.path.relative_to(woodblock.file.get_corpus())), 'id': self._file.id},
-                'fragment': {'sha256': self.hash, 'size': self.size, 'number': self._number,
-                             'file_offsets': {'start': self._start_offset, 'end': self._end_offset}}}
+        return {
+            'file': {
+                'type': 'file',
+                'sha256': self._file.hash,
+                'size': self._file.size,
+                'path': str(self._file.path.relative_to(woodblock.file.get_corpus())),
+                'id': self._file.id,
+            },
+            'fragment': {
+                'sha256': self.hash,
+                'size': self.size,
+                'number': self._number,
+                'file_offsets': {'start': self._start_offset, 'end': self._end_offset},
+            },
+        }
 
     def _compute_hash(self):
         for _ in self:

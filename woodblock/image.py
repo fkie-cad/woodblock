@@ -1,12 +1,11 @@
 """This module contains the Image class."""
+
 import configparser
 import json
 import pathlib
 import random
 from collections import defaultdict
 from operator import itemgetter
-
-from multimethod import multimethod
 
 import woodblock.datagen
 import woodblock.file
@@ -29,7 +28,7 @@ class Image:
 
     def __init__(self, block_size: int = 512, padding_generator=None):
         self._block_size = block_size
-        self._scenarios = list()
+        self._scenarios = []
         if padding_generator is None:
             padding_generator = woodblock.datagen.Random()
         self._generate_padding = padding_generator
@@ -50,7 +49,7 @@ class Image:
             try:
                 config.read_file(config_handle)
             except configparser.Error as err:
-                raise ImageConfigError(err.message)
+                raise ImageConfigError(str(err)) from err
         general = _parse_general_section(config)
         woodblock.file.corpus(path.absolute().parent / general['corpus'])
         if 'seed' in general:
@@ -59,55 +58,55 @@ class Image:
         image = Image()
         for section in config.sections():
             if section != 'general':
-                scenario = _parse_scenario_section(section_name=section, section=config[section],
-                                                   num_filler_blocks=num_filler_blocks,
-                                                   block_size=general['block size'])
+                scenario = _parse_scenario_section(
+                    section_name=section,
+                    section=config[section],
+                    num_filler_blocks=num_filler_blocks,
+                    block_size=general['block size'],
+                )
                 image.add(scenario)
         return image
 
-    @multimethod
-    def write(self, path: pathlib.Path):
+    def write(self, target):
         """Write the image to disk.
 
-        This method write the image to the specified ``path``. Moreover, it also writes the image metadata to disk. The
-        metadata file will be ``path`` with the ".json" extension. E.g. if ``path`` is "test-image.dd" then the actual
-        image will be in "test-image.dd" and the metadata will be in "test-image.dd.json".
+        ``target`` may be a path (``str`` or ``pathlib.Path``) or a ``.write()``-supporting file-like
+        object. When given a path, the image metadata is also written alongside it: the metadata file is
+        ``target`` with the ".json" extension appended, e.g. for "test-image.dd" the image is written to
+        "test-image.dd" and the metadata to "test-image.dd.json". When given a file-like object, only the
+        image is written -- call :attr:`metadata` yourself if you need the ground truth.
 
         Args:
-            path: The output path.
+            target: The output path or a ``.write()``-supporting file-like object.
         """
-        with path.open('wb') as file_handle:
-            self.write(file_handle)
-        self._write_metadata(path)
-
-    @multimethod
-    def write(self, image_handle):  # pylint: disable=function-redefined
-        """Write the image to disk.
-
-        This method write the image to the specified ``path``. Note that no metadata is written. You have to call
-        metadata yourself if you need it.
-
-        Args:
-            image_handle: A ``.write()``-supporting file-like object.
-        """
+        if isinstance(target, (str, pathlib.Path)):
+            path = pathlib.Path(target)
+            with path.open('wb') as file_handle:
+                self.write(file_handle)
+            self._write_metadata(path)
+            return
         # Reset the padding generator so writing the same image twice yields byte-identical
         # output. User-supplied padding generators may be plain callables without a reset.
         if hasattr(self._generate_padding, 'reset'):
             self._generate_padding.reset()
         for scenario in self._scenarios:
-            self._write_scenario(image_handle, scenario)
+            self._write_scenario(target, scenario)
 
     @property
     def metadata(self):
         """Return the image metadata."""
-        meta = {'block_size': self._block_size, 'seed': woodblock.random.get_seed(),
-                'corpus': str(woodblock.file.get_corpus()),
-                'scenarios': [s.metadata for s in self._scenarios]}
+        meta = {
+            'block_size': self._block_size,
+            'seed': woodblock.random.get_seed(),
+            'corpus': str(woodblock.file.get_corpus()),
+            'scenarios': [s.metadata for s in self._scenarios],
+        }
         self._update_metadata_with_image_offsets(meta, self._compute_image_offsets())
         return meta
 
     def _write_metadata(self, image_path: pathlib.Path):
-        metadata_path = pathlib.Path('.'.join((str(image_path.absolute()), 'json')))
+        image_path = image_path.absolute()
+        metadata_path = image_path.with_name(image_path.name + '.json')
         with metadata_path.open('w') as file_handle:
             json.dump(self.metadata, file_handle)
 
@@ -136,7 +135,8 @@ class Image:
                 if number in image_offsets[file_id]:
                     raise WoodblockError(
                         f'Fragment {number} of file {file_id} is placed more than once in the image. '
-                        'The ground truth cannot represent a fragment at more than one location.')
+                        'The ground truth cannot represent a fragment at more than one location.'
+                    )
                 image_offsets[file_id][number] = {'start': current_offset, 'end': end_offset}
                 current_offset += frag_size
                 if current_offset % self._block_size != 0:
@@ -144,7 +144,7 @@ class Image:
         return image_offsets
 
     @staticmethod
-    def _update_metadata_with_image_offsets(meta, image_offsets):  # pylint: disable=invalid-name
+    def _update_metadata_with_image_offsets(meta, image_offsets):
         for scenario_meta in meta['scenarios']:
             for file_meta in scenario_meta['files']:
                 file_id = file_meta['original']['id']
@@ -158,7 +158,7 @@ def _parse_general_section(config: dict) -> dict:
     section = config['general']
     if 'corpus' not in section:
         raise ImageConfigError('Mandatory "corpus" key in "general" section is not present.')
-    general = dict()
+    general = {}
     general['corpus'] = section['corpus']
     if 'block size' in section:
         general['block size'] = int(section['block size'])
@@ -192,8 +192,8 @@ def _get_number_of_blocks(section: dict, min_or_max: str):
 def _parse_scenario_section(section_name: str, section: dict, num_filler_blocks: tuple, block_size: int):
     try:
         layout = _get_layout_type(section)
-    except KeyError:
-        raise ImageConfigError(f'Section [{section_name}] contains no "layout" key.')
+    except KeyError as err:
+        raise ImageConfigError(f'Section [{section_name}] contains no "layout" key.') from err
 
     if layout == 'fragment-sequence':
         return _parse_fragment_sequence_layout(section_name, section, num_filler_blocks, block_size)
@@ -212,9 +212,9 @@ _FRAGMENT_SEQUENCE_ALLOWED_KEYS = frozenset({'layout', 'min filler blocks', 'max
 def _is_file_definition_key(key: str) -> bool:
     """Return ``True`` for the dynamic ``fileN`` / ``frags fileN`` / ``frags_fileN`` keys."""
     if key.startswith('frags file') or key.startswith('frags_file'):
-        return key[len('frags file'):].isdigit()
+        return key[len('frags file') :].isdigit()
     if key.startswith('file'):
-        return key[len('file'):].isdigit()
+        return key[len('file') :].isdigit()
     return False
 
 
@@ -242,7 +242,8 @@ def _get_layout_type(section: dict) -> str:
         return 'fragment-sequence'
     raise ImageConfigError(
         f'Unsupported layout type: "{raw}". '
-        'Use "intertwine" or a comma-separated fragment sequence (e.g. "1.1, 2.3, R, Z").')
+        'Use "intertwine" or a comma-separated fragment sequence (e.g. "1.1, 2.3, R, Z").'
+    )
 
 
 def _looks_like_fragment_sequence(layout: str) -> bool:
@@ -256,12 +257,17 @@ def _parse_intertwine_layout(section_name: str, section: dict, block_size: int):
     scenario = Scenario(section_name)
     try:
         num_files = section['num files']
-    except KeyError:
-        raise ImageConfigError(f'Section [{section_name}] has an intertwined layout but does not specify "num files".')
+    except KeyError as err:
+        raise ImageConfigError(
+            f'Section [{section_name}] has an intertwined layout but does not specify "num files".'
+        ) from err
     num_files = int(num_files)
     min_frags, max_frags = _parse_frags_nums(section_name, section)
-    scenario.add(woodblock.file.intertwine_randomly(number_of_files=num_files, block_size=block_size,
-                                                    min_fragments=min_frags, max_fragments=max_frags))
+    scenario.add(
+        woodblock.file.intertwine_randomly(
+            number_of_files=num_files, block_size=block_size, min_fragments=min_frags, max_fragments=max_frags
+        )
+    )
     return scenario
 
 
@@ -290,7 +296,8 @@ def _parse_fragment_sequence_layout(section_name: str, section: dict, num_filler
     max_filler_blocks = _get_max_filler_fragment_blocks(section) or num_filler_blocks[1]
     if min_filler_blocks < 1 or max_filler_blocks < 1 or min_filler_blocks > max_filler_blocks:
         raise ImageConfigError(
-            f'Invalid min/max number of fillers blocks: min={min_filler_blocks}, max={max_filler_blocks}')
+            f'Invalid min/max number of fillers blocks: min={min_filler_blocks}, max={max_filler_blocks}'
+        )
     for fragment in layout:
         if fragment['type'] == 'file':
             scenario.add(file_fragments[fragment['file_num']][fragment['frag_num']])
@@ -304,27 +311,23 @@ def _parse_fragment_sequence_layout(section_name: str, section: dict, num_filler
 
 
 def _parse_frags_nums(section_name: str, section: dict) -> tuple:
-    min_frags = 1
-    max_frags = 4
-    if 'min frags' in section:
-        try:
-            min_frags = int(section['min frags'])
-        except ValueError:
-            raise ImageConfigError(f'"min frags" has to be an integer > 0 in section [{section_name}]')
-        else:
-            if min_frags < 1:
-                raise ImageConfigError(f'"min frags" has to be an integer > 0 in section [{section_name}]')
-    if 'max frags' in section:
-        try:
-            max_frags = int(section['max frags'])
-        except ValueError:
-            raise ImageConfigError(f'"max frags" has to be an integer > 0 in section [{section_name}]')
-        else:
-            if max_frags < 1:
-                raise ImageConfigError(f'"max frags" has to be an integer > 0 in section [{section_name}]')
+    min_frags = _parse_positive_int(section, 'min frags', section_name, default=1)
+    max_frags = _parse_positive_int(section, 'max frags', section_name, default=4)
     if min_frags > max_frags:
         raise ImageConfigError(f'"min frags" has to be <= "max frags" in section [{section_name}]')
     return min_frags, max_frags
+
+
+def _parse_positive_int(section: dict, key: str, section_name: str, default: int) -> int:
+    if key not in section:
+        return default
+    try:
+        value = int(section[key])
+    except ValueError as err:
+        raise ImageConfigError(f'"{key}" has to be an integer > 0 in section [{section_name}]') from err
+    if value < 1:
+        raise ImageConfigError(f'"{key}" has to be an integer > 0 in section [{section_name}]')
+    return value
 
 
 def _get_filler_fragment_size(min_blocks: int, max_blocks: int, block_size: int) -> int:
@@ -332,31 +335,33 @@ def _get_filler_fragment_size(min_blocks: int, max_blocks: int, block_size: int)
 
 
 def _create_file_fragments(files):
-    fragments = defaultdict(dict)
+    fragments = {}
     for file_num in files:
         num_frags = files[file_num]['frags']
         file_path = files[file_num]['path']
         if file_path is not None:
             if (woodblock.file.get_corpus() / file_path).is_dir():
-                frags = woodblock.file.draw_fragmented_files(file_path, number_of_files=1, min_fragments=num_frags,
-                                                             max_fragments=num_frags)[0]
+                frags = woodblock.file.draw_fragmented_files(
+                    file_path, number_of_files=1, min_fragments=num_frags, max_fragments=num_frags
+                )[0]
             else:
                 frags = woodblock.file.File(file_path).fragment_randomly(num_fragments=num_frags)
         else:
-            frags = woodblock.file.draw_fragmented_files(number_of_files=1, min_fragments=num_frags,
-                                                         max_fragments=num_frags)[0]
+            frags = woodblock.file.draw_fragmented_files(
+                number_of_files=1, min_fragments=num_frags, max_fragments=num_frags
+            )[0]
         fragments[file_num] = {i + 1: f for i, f in enumerate(frags)}
     return fragments
 
 
-def _assert_each_file_has_a_defined_num_of_frags(files, section):  # pylint: disable=invalid-name
+def _assert_each_file_has_a_defined_num_of_frags(files, section):
     for num, file in files.items():
         if file['frags'] is None:
             raise ImageConfigError(f'No "frags file{num} definition is missing in section "[{section}]".')
 
 
 def _parse_layout_line(line: str) -> list:
-    layout = list()
+    layout = []
     seen_file_fragments = set()
     for token in (x.strip() for x in line.split(',')):
         token = token.lower()
@@ -369,7 +374,8 @@ def _parse_layout_line(line: str) -> list:
             if (file_num, frag_num) in seen_file_fragments:
                 raise ImageConfigError(
                     f'Fragment {frag_num} of file {file_num} is referenced more than once in the layout. '
-                    'The ground truth cannot represent a fragment at more than one location.')
+                    'The ground truth cannot represent a fragment at more than one location.'
+                )
             seen_file_fragments.add((file_num, frag_num))
             layout.append({'type': 'file', 'file_num': file_num, 'frag_num': frag_num})
     return layout
@@ -390,11 +396,20 @@ class ImageLogParser:
         self._log = json.load(fp)
 
     def get_fragment_order(self):
-        fragments = list()
+        fragments = []
         for scenario in self._log['scenarios']:
             for file in scenario['files']:
-                fragments.extend((scenario['name'], file['original']['id'], file['original']['path'],
-                                  frag['number'], frag['file_offsets']['start'], frag['file_offsets']['end'],
-                                  frag['image_offsets']['start'], frag['image_offsets']['end'])
-                                 for frag in file['fragments'])
+                fragments.extend(
+                    (
+                        scenario['name'],
+                        file['original']['id'],
+                        file['original']['path'],
+                        frag['number'],
+                        frag['file_offsets']['start'],
+                        frag['file_offsets']['end'],
+                        frag['image_offsets']['start'],
+                        frag['image_offsets']['end'],
+                    )
+                    for frag in file['fragments']
+                )
         return tuple(sorted(fragments, key=itemgetter(6)))

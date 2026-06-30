@@ -5,12 +5,12 @@ default: tests
 
 .PHONY: init
 init:
-	pip install -r requirements.txt -U
+	pip install -e .[dev] -U
 
 
 .PHONY: package
 package:
-	python setup.py sdist bdist_wheel
+	python -m build
 
 
 .PHONY: upload
@@ -44,17 +44,17 @@ all-tests: clear-test-output tests slow-unit-tests
 
 .PHONY: system-tests
 system-tests:
-	@PYTHONPATH=. py.test tests/system
+	@PYTHONPATH=. pytest tests/system
 
 
 .PHONY: unit-tests
 unit-tests:
-	@PYTHONPATH=. py.test tests/unit
+	@PYTHONPATH=. pytest tests/unit
 
 
 .PHONY: slow-unit-tests
 slow-unit-tests:
-	@PYTHONPATH=. py.test --run-slow -m slow tests/unit
+	@PYTHONPATH=. pytest --run-slow -m slow tests/unit
 
 
 .PHONY: bandit
@@ -67,14 +67,21 @@ cov-report:
 	@coverage report --rcfile=coverage.ini
 
 
-.PHONY: pylint
-pylint:
-	@pylint --rcfile=pylintrc --fail-under=9.5 woodblock
+.PHONY: ruff
+ruff:
+	@ruff check woodblock
+	@ruff format --check woodblock
+
+
+.PHONY: format
+format:
+	@ruff format woodblock
+	@ruff check --fix woodblock
 
 
 .PHONY: version-update
 version-update:
-	@sed -i -r "s/(.*version=').*/\1$(WOODBLOCK_VERSION)',/" setup.py
+	@sed -i -r "s/^version = .*/version = \"$(WOODBLOCK_VERSION)\"/" pyproject.toml
 	@sed -i -r "s/release .*/release = '$(WOODBLOCK_VERSION)'/" docs/conf.py
 
 

@@ -1,4 +1,5 @@
 """This module contains data generators."""
+
 import random
 
 from woodblock.random import RandomBytes
@@ -25,7 +26,7 @@ class Random:
     """Generates random bytes."""
 
     def __init__(self, rng=None):
-        self._seed = random.randint(0, 2 ** 32 - 1)  # nosec
+        self._seed = random.randint(0, 2**32 - 1)  # nosec
         # Each Random instance must own its own RNG. Using a shared default instance would
         # entangle the byte streams of all fillers and the image padding, breaking
         # reproducibility and making a fragment's data depend on unrelated generators.

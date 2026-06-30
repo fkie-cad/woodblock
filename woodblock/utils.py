@@ -35,7 +35,8 @@ def get_file_list(path: pathlib.Path, min_size: int = 0) -> tuple:
     """
     basedir = pathlib.Path(path)
     return tuple(
-        sorted(f for f in basedir.glob('**/*') if f.is_file() and not _is_readme(f) and f.stat().st_size >= min_size))
+        sorted(f for f in basedir.glob('**/*') if f.is_file() and not _is_readme(f) and f.stat().st_size >= min_size)
+    )
 
 
 def _is_readme(path) -> bool:
