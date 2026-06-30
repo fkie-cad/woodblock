@@ -34,6 +34,8 @@ class TestSeedValidation:
     def test_that_an_invalid_seed_does_not_mutate_rng_state(self):
         # An out-of-range seed previously mutated Python's RNG before NumPy raised, leaving a
         # half-seeded, inconsistent state. Validation must happen before any RNG is touched.
+        # NumPy's global state is never touched by woodblock (see the decoupling test below),
+        # so it must remain unchanged here too.
         woodblock.random.seed(42)
         py_state = _stdlib_random.getstate()
         np_state = np.random.get_state()
@@ -44,3 +46,14 @@ class TestSeedValidation:
         assert _stdlib_random.getstate() == py_state
         assert np.array_equal(np.random.get_state()[1], np_state[1])
         assert woodblock.random.get_seed() == 42
+
+    def test_that_seeding_does_not_touch_the_numpy_global_rng(self):
+        # Data generation derives its seeds from Python's ``random`` and uses per-instance NumPy
+        # RandomStates; the NumPy *global* RNG is intentionally independent of woodblock's seeding.
+        # This locks that in so the previously misleading global ``np.random.seed`` can't return.
+        np.random.seed(123456)
+        np_state_before = np.random.get_state()
+
+        woodblock.random.seed(42)
+
+        assert np.array_equal(np.random.get_state()[1], np_state_before[1])
