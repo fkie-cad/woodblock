@@ -213,6 +213,59 @@ class TestImageConfig:
             Image.from_config(pathlib.Path(path))
         path.unlink()
 
+    @pytest.mark.parametrize('key', ('blocksize', 'seeed', 'min fragments'))
+    def test_that_an_unknown_key_in_the_general_section_raises_an_error(self, key, configs_dir,
+                                                                        scenario_sec_with_only_frag_options):
+        path = configs_dir / 'unknown-general-key.conf'
+        with path.open('w') as config:
+            config.write(f'[general]\nseed = 123\ncorpus = ../corpus/\n{key} = 512\n\n')
+            config.write(scenario_sec_with_only_frag_options)
+        with pytest.raises(ImageConfigError) as excinfo:
+            Image.from_config(pathlib.Path(path))
+        assert key in str(excinfo.value)
+        path.unlink()
+
+    @pytest.mark.parametrize('key', ('min fragments', 'max fragments', 'numfiles', 'foo'))
+    def test_that_an_unknown_key_in_an_intertwine_scenario_raises_an_error(self, key, configs_dir, general_section):
+        path = configs_dir / 'unknown-intertwine-key.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\nlayout = intertwine\nnum files = 3\n')
+            config.write(f'{key} = 2\n')
+        with pytest.raises(ImageConfigError) as excinfo:
+            Image.from_config(pathlib.Path(path))
+        assert key in str(excinfo.value)
+        path.unlink()
+
+    @pytest.mark.parametrize('key', ('frags', 'fragsfile1', 'filex', 'foo'))
+    def test_that_an_unknown_key_in_a_fragment_sequence_scenario_raises_an_error(self, key, configs_dir,
+                                                                                 general_section):
+        path = configs_dir / 'unknown-fragment-sequence-key.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\nfrags file1 = 1\n')
+            config.write(f'{key} = 2\n')
+            config.write('layout = 1-1\n')
+        with pytest.raises(ImageConfigError) as excinfo:
+            Image.from_config(pathlib.Path(path))
+        assert key in str(excinfo.value)
+        path.unlink()
+
+    def test_that_known_fragment_sequence_keys_are_accepted(self, configs_dir, general_section):
+        path = configs_dir / 'known-fragment-sequence-keys.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n'
+                         'frags file1 = 2\n'
+                         'frags_file2 = 1\n'
+                         'file2 = 1024\n'
+                         'min filler blocks = 1\n'
+                         'max filler blocks = 2\n'
+                         'layout = 1-1, R, 2-1, 1-2\n')
+        image = Image.from_config(pathlib.Path(path))
+        assert len(image.metadata['scenarios']) == 1
+        path.unlink()
+
 
 @pytest.fixture
 def configs_dir(test_data_path):

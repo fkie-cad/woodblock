@@ -163,6 +163,7 @@ def _parse_general_section(config: dict) -> dict:
         general['seed'] = int(section['seed'])
     general['min filler blocks'] = _get_min_filler_fragment_blocks(section) or 1
     general['max filler blocks'] = _get_max_filler_fragment_blocks(section) or 10
+    _reject_unknown_keys('general', section, _GENERAL_ALLOWED_KEYS)
     return general
 
 
@@ -198,6 +199,34 @@ def _parse_scenario_section(section_name: str, section: dict, num_filler_blocks:
 
 _KEYWORD_LAYOUTS = ('intertwine',)
 
+_GENERAL_ALLOWED_KEYS = frozenset({'corpus', 'block size', 'seed', 'min filler blocks', 'max filler blocks'})
+_INTERTWINE_ALLOWED_KEYS = frozenset({'layout', 'num files', 'min frags', 'max frags'})
+_FRAGMENT_SEQUENCE_ALLOWED_KEYS = frozenset({'layout', 'min filler blocks', 'max filler blocks'})
+
+
+def _is_file_definition_key(key: str) -> bool:
+    """Return ``True`` for the dynamic ``fileN`` / ``frags fileN`` / ``frags_fileN`` keys."""
+    if key.startswith('frags file') or key.startswith('frags_file'):
+        return key[len('frags file'):].isdigit()
+    if key.startswith('file'):
+        return key[len('file'):].isdigit()
+    return False
+
+
+def _reject_unknown_keys(section_name: str, section: dict, allowed: frozenset, dynamic_ok=None):
+    """Raise ``ImageConfigError`` for any key not in ``allowed`` and not accepted by ``dynamic_ok``.
+
+    Unknown keys are otherwise ignored silently by the parser, which lets a typo (e.g.
+    ``blocksize`` instead of ``block size``) change the output without any error -- dangerous
+    for a tool whose images are supposed to be reproducible from their config.
+    """
+    for key in section:
+        if key in allowed:
+            continue
+        if dynamic_ok is not None and dynamic_ok(key):
+            continue
+        raise ImageConfigError(f'Unknown key "{key}" in section [{section_name}].')
+
 
 def _get_layout_type(section: dict) -> str:
     raw = section['layout'].strip()
@@ -218,6 +247,7 @@ def _looks_like_fragment_sequence(layout: str) -> bool:
 
 
 def _parse_intertwine_layout(section_name: str, section: dict, block_size: int):
+    _reject_unknown_keys(section_name, section, _INTERTWINE_ALLOWED_KEYS)
     scenario = Scenario(section_name)
     try:
         num_files = section['num files']
@@ -231,6 +261,7 @@ def _parse_intertwine_layout(section_name: str, section: dict, block_size: int):
 
 
 def _parse_fragment_sequence_layout(section_name: str, section: dict, num_filler_blocks: tuple, block_size: int):
+    _reject_unknown_keys(section_name, section, _FRAGMENT_SEQUENCE_ALLOWED_KEYS, dynamic_ok=_is_file_definition_key)
     scenario = Scenario(section_name)
     files = dict()
     for key, value in section.items():
