@@ -33,6 +33,11 @@ setup(
     zip_safe=False,
     classifiers=[
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'License :: OSI Approved :: MIT License',
     ],
     project_urls={
@@ -40,5 +45,5 @@ setup(
         'Source': 'https://github.com/fkie-cad/woodblock/',
         'Tracker': 'https://github.com/fkie-cad/woodblock/issues',
     },
-    python_requires='>3.6',
+    python_requires='>=3.9',
 )

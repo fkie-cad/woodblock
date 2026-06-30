@@ -11,12 +11,10 @@ sphinx_rtd_theme
 
 # test related
 bandit
-codecov
 pylint
 pytest
 pytest-cov
-pytest-codestyle
-pytest-lazy-fixture
+pytest-lazy-fixtures
 
 # other utils
 twine

@@ -149,7 +149,7 @@ class File:
         max_frag_point = blocks_in_file
         if self._size % block_size != 0:
             max_frag_point += 1
-        return self.fragment(random.sample(range(1, max_frag_point), num_fragments - 1), block_size)
+        return self.fragment(random.sample(range(1, max_frag_point), num_fragments - 1), block_size)  # nosec
 
     def fragment_evenly(self, num_fragments: int, block_size: int = 512) -> list:
         """Fragment the file evenly into ``num_fragment`` fragments.
@@ -220,11 +220,11 @@ def draw_files(path: pathlib.Path = None, number_of_files: int = 1, unique: bool
         raise WoodblockError(f'Given path does not contain enough files with a minimal size of {min_size}.')
     if unique:
         try:
-            return list(File(f) for f in random.sample(candidates, k=number_of_files))
+            return list(File(f) for f in random.sample(candidates, k=number_of_files))  # nosec
         except ValueError:
             raise WoodblockError('Not enough unique files to choose from.')
     else:
-        return list(File(f) for f in random.choices(candidates, k=number_of_files))
+        return list(File(f) for f in random.choices(candidates, k=number_of_files))  # nosec
 
 
 def draw_fragmented_files(path: pathlib.Path = None, number_of_files: int = 1, block_size: int = 512,
@@ -344,4 +344,4 @@ def _insert_at_slots(frag_list, new_fragments, slots):
 
 
 def _select_free_slots(num_slots_available, num_slots):
-    return sorted(random.sample(range(num_slots_available), k=num_slots))
+    return sorted(random.sample(range(num_slots_available), k=num_slots))  # nosec

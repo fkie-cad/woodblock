@@ -2,6 +2,7 @@ import pathlib
 import string
 
 import pytest
+from pytest_lazy_fixtures import lf
 
 import woodblock
 from woodblock.errors import ImageConfigError
@@ -14,14 +15,14 @@ class TestImageConfig:
             Image.from_config(pathlib.Path('/some/path'))
 
     @pytest.mark.parametrize('path', (
-            pytest.lazy_fixture('empty_config'), pytest.lazy_fixture('config_without_general_section')))
+            lf('empty_config'), lf('config_without_general_section')))
     def test_that_a_missing_general_section_raises_an_error(self, path):
         with pytest.raises(ImageConfigError):
             Image.from_config(path)
 
     @pytest.mark.parametrize('path', (
-            pytest.lazy_fixture('empty_config'), pytest.lazy_fixture('config_without_general_section'),
-            pytest.lazy_fixture('config_without_corpus')
+            lf('empty_config'), lf('config_without_general_section'),
+            lf('config_without_corpus')
     ))
     def test_that_a_missing_corpus_option_raises_an_error(self, path):
         with pytest.raises(ImageConfigError):
@@ -32,14 +33,14 @@ class TestImageConfig:
         assert woodblock.random.get_seed() == 123
 
     @pytest.mark.parametrize('config, num_expected_scenarios', (
-            (pytest.lazy_fixture('minimal_config'), 1),
+            (lf('minimal_config'), 1),
     ))
     def test_that_the_correct_number_of_scenarios_is_present(self, config, num_expected_scenarios):
         image = Image.from_config(config)
         assert len(image.metadata['scenarios']) == num_expected_scenarios
 
     @pytest.mark.parametrize('config, num_expected_files', (
-            (pytest.lazy_fixture('minimal_config'), (3,)),
+            (lf('minimal_config'), (3,)),
     ))
     def test_that_the_correct_number_of_files_per_scenario_is_present(self, config, num_expected_files):
         image = Image.from_config(config)
@@ -85,8 +86,8 @@ class TestImageConfig:
         path.unlink()
 
     @pytest.mark.parametrize('config', (
-            pytest.lazy_fixture('config_with_zeroes_fillers'),
-            pytest.lazy_fixture('config_with_random_fillers')
+            lf('config_with_zeroes_fillers'),
+            lf('config_with_random_fillers')
     ))
     def test_that_fillers_can_be_added(self, config):
         image = Image.from_config(config)
@@ -95,17 +96,17 @@ class TestImageConfig:
         assert sum(1 for f in scenario['files'] if f['original']['type'] == 'filler') == 2
 
     @pytest.mark.parametrize('config', (
-            pytest.lazy_fixture('config_with_invalid_sizes_in_general_section'),
-            pytest.lazy_fixture('config_with_invalid_sizes_in_scenario_section')
+            lf('config_with_invalid_sizes_in_general_section'),
+            lf('config_with_invalid_sizes_in_scenario_section')
     ))
     def test_that_invalid_min_max_blocks_raise_an_error(self, config):
         with pytest.raises(ImageConfigError):
             Image.from_config(config)
 
     @pytest.mark.parametrize('config', (
-            pytest.lazy_fixture('config_with_fillers_and_sizes_in_general_section'),
-            pytest.lazy_fixture('config_with_fillers_and_min_size_in_scenario_section'),
-            pytest.lazy_fixture('config_with_fillers_and_max_size_in_scenario_section')
+            lf('config_with_fillers_and_sizes_in_general_section'),
+            lf('config_with_fillers_and_min_size_in_scenario_section'),
+            lf('config_with_fillers_and_max_size_in_scenario_section')
     ))
     def test_that_the_fillers_have_the_correct_size(self, config):
         image = Image.from_config(config['config'])
@@ -119,7 +120,7 @@ class TestImageConfig:
                 assert expected['min'] <= file['fragments'][0]['size'] / block_size <= expected['max']
 
     @pytest.mark.parametrize('config', (
-            pytest.lazy_fixture('config_with_fillers_and_sizes_in_scenario_section'),
+            lf('config_with_fillers_and_sizes_in_scenario_section'),
     ))
     def test_that_min_max_blocks_from_scenario_section_are_preferred(self, config):
         image = Image.from_config(config['config'])
@@ -133,8 +134,8 @@ class TestImageConfig:
                 assert expected['min'] <= file['fragments'][0]['size'] / block_size <= expected['max']
 
     @pytest.mark.parametrize('config', (
-            pytest.lazy_fixture('config_with_simple_intertwine_layout'),
-            pytest.lazy_fixture('config_with_intertwine_layout_and_fragment_sizes')
+            lf('config_with_simple_intertwine_layout'),
+            lf('config_with_intertwine_layout_and_fragment_sizes')
     ))
     def test_that_the_intertwine_layout_works(self, config):
         image = Image.from_config(config['path'])
@@ -145,8 +146,8 @@ class TestImageConfig:
             assert expected['min_frags'] <= len(file['fragments']) <= expected['max_frags']
 
     @pytest.mark.parametrize('config', (
-            pytest.lazy_fixture('config_with_intertwine_layout_but_no_num_files'),
-            pytest.lazy_fixture('config_with_invalid_frag_sizes_in_intertwine_layout'),
+            lf('config_with_intertwine_layout_but_no_num_files'),
+            lf('config_with_invalid_frag_sizes_in_intertwine_layout'),
     ))
     def test_that_invalid_intertwine_scenarios_raise_an_error(self, config):
         with pytest.raises(ImageConfigError):

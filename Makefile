@@ -69,7 +69,7 @@ cov-report:
 
 .PHONY: pylint
 pylint:
-	@pylint --rcfile=pylintrc woodblock
+	@pylint --rcfile=pylintrc --fail-under=9.5 woodblock
 
 
 .PHONY: version-update

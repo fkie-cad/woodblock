@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/fkie-cad/woodblock.svg?branch=main)](https://travis-ci.org/fkie-cad/woodblock)
+[![CI](https://github.com/fkie-cad/woodblock/actions/workflows/ci.yml/badge.svg)](https://github.com/fkie-cad/woodblock/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/fkie-cad/woodblock/branch/main/graph/badge.svg)](https://codecov.io/gh/fkie-cad/woodblock)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/330a44b0155f4c989c581485799ae8e9)](https://app.codacy.com/app/0x4d4c/woodblock?utm_source=github.com&utm_medium=referral&utm_content=fkie-cad/woodblock&utm_campaign=Badge_Grade_Settings)
 [![Documentation Status](https://readthedocs.org/projects/woodblock/badge/?version=latest)](https://woodblock.readthedocs.io/en/latest/?badge=latest)
