@@ -16,17 +16,14 @@ class FillerFragment:
     """
 
     def __init__(self, size, data_generator=None, chunk_size=8192):
+        if size < 1:
+            raise WoodblockError('Fragments must not be empty!')
         self._size = size
-        self._chunk_size = min(size, chunk_size)
-        self._orig_chunk_size = chunk_size
+        self._chunk_size = chunk_size
         if data_generator is None:
             data_generator = woodblock.datagen.Random()
         self._generate_data = data_generator
-        self._bytes_read = 0
-        if self._size < 1:
-            raise WoodblockError('Fragments must not be empty!')
         self._hash = None
-        self._hasher = hashlib.sha256()
         self._id = uuid4().hex
 
     @property
@@ -38,14 +35,13 @@ class FillerFragment:
     def hash(self):
         """Return the SHA-256 digest as hexadecimal string."""
         if self._hash is None:
-            self._hash = self._compute_hash()
+            for _ in self:
+                pass
         return self._hash
 
     @property
     def metadata(self) -> dict:
         """Return the fragment metadata."""
-        if self._hash is None:
-            self._hash = self._compute_hash()
         return {
             'file': {
                 'type': 'filler',
@@ -63,40 +59,22 @@ class FillerFragment:
         }
 
     def __iter__(self):
-        # Reset the full iteration state, not just the hasher, so that every iteration
-        # reproduces the complete fragment. Without resetting _bytes_read a second iteration
-        # of a fragment larger than the chunk size would emit truncated data. Resetting the
-        # data generator (when it supports it) makes every pass regenerate byte-identical
-        # data regardless of iteration order, so the recorded hash always matches the bytes
-        # written -- even for a plain FillerFragment with the default Random generator.
-        self._bytes_read = 0
-        self._chunk_size = min(self._size, self._orig_chunk_size)
-        self._hasher = hashlib.sha256()
+        # A fresh generator per iteration keeps all iteration state local, so re-iterating always
+        # reproduces the complete fragment. Resetting the data generator (when it supports it) makes
+        # every pass regenerate byte-identical data regardless of iteration order, so the recorded
+        # hash always matches the bytes written.
         if hasattr(self._generate_data, 'reset'):
             self._generate_data.reset()
-        return self
-
-    def __next__(self):
-        if self._chunk_size <= 0:
-            self._reset_state()
-            raise StopIteration()
-        chunk = self._generate_data(min(self._chunk_size, self._size))
-        self._bytes_read += self._chunk_size
-        self._chunk_size = max(0, min(self._chunk_size, self._size - self._bytes_read))
-        if self._hash is None:
-            self._hasher.update(chunk)
-        return chunk
-
-    def _compute_hash(self):
-        hasher = hashlib.sha256()
-        for chunk in self:
-            hasher.update(chunk)
-        return hasher.hexdigest()
-
-    def _reset_state(self):
-        if self._hash is None:
-            self._hash = self._hasher.hexdigest()
-        self._chunk_size = self._orig_chunk_size
+        hasher = hashlib.sha256() if self._hash is None else None
+        remaining = self._size
+        while remaining > 0:
+            chunk = self._generate_data(min(self._chunk_size, remaining))
+            remaining -= len(chunk)
+            if hasher is not None:
+                hasher.update(chunk)
+            yield chunk
+        if hasher is not None:
+            self._hash = hasher.hexdigest()
 
 
 class ZeroesFragment(FillerFragment):
@@ -127,11 +105,7 @@ class FileFragment:
         self._end_offset = end_offset
         self._size = end_offset - start_offset
         self._hash = None
-        self._hasher = hashlib.sha256()
         self._chunk_size = chunk_size
-        self._orig_chunk_size = chunk_size
-        self._bytes_read = 0
-        self._file_handle = None
 
     @property
     def size(self):
@@ -142,36 +116,32 @@ class FileFragment:
     def hash(self):
         """Return the SHA-256 digest as hexadecimal string."""
         if self._hash is None:
-            self._compute_hash()
+            for _ in self:
+                pass
         return self._hash
 
     def __iter__(self):
-        # Reset the full iteration state so re-iterating yields the complete fragment again.
-        # Without resetting _bytes_read a second pass over a fragment larger than the chunk
-        # size would read truncated data.
-        self._bytes_read = 0
-        self._chunk_size = self._orig_chunk_size
-        self._hasher = hashlib.sha256()
-        self._file_handle = open(self._file.path, 'rb')
-        self._file_handle.seek(self._start_offset)
-        return self
-
-    def __next__(self):
-        if self._chunk_size <= 0:
-            self._reset_state()
-            raise StopIteration()
-        chunk = self._file_handle.read(min(self._chunk_size, self._size))
-        self._bytes_read += len(chunk)
-        self._chunk_size = max(0, min(self._chunk_size, self._size - self._bytes_read))
-        if self._hash is None:
-            self._hasher.update(chunk)
-        return chunk
+        # A fresh generator per iteration keeps all iteration state local, so re-iterating always
+        # reads the complete fragment from the file again. The file handle is opened per iteration
+        # and closed by the context manager even if iteration stops early.
+        hasher = hashlib.sha256() if self._hash is None else None
+        with open(self._file.path, 'rb') as handle:
+            handle.seek(self._start_offset)
+            remaining = self._size
+            while remaining > 0:
+                chunk = handle.read(min(self._chunk_size, remaining))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+                if hasher is not None:
+                    hasher.update(chunk)
+                yield chunk
+        if hasher is not None:
+            self._hash = hasher.hexdigest()
 
     @property
     def metadata(self):
         """Return the fragment metadata."""
-        if self._hash is None:
-            self._compute_hash()
         return {
             'file': {
                 'type': 'file',
@@ -187,13 +157,3 @@ class FileFragment:
                 'file_offsets': {'start': self._start_offset, 'end': self._end_offset},
             },
         }
-
-    def _compute_hash(self):
-        for _ in self:
-            pass
-
-    def _reset_state(self):
-        if self._hash is None:
-            self._hash = self._hasher.hexdigest()
-        self._file_handle.close()
-        self._chunk_size = self._orig_chunk_size
