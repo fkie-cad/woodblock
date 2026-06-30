@@ -12,7 +12,7 @@ import woodblock.datagen
 import woodblock.file
 import woodblock.fragments
 import woodblock.random
-from woodblock.errors import ImageConfigError
+from woodblock.errors import ImageConfigError, WoodblockError
 from woodblock.scenario import Scenario
 
 
@@ -129,10 +129,15 @@ class Image:
         for scenario in self._scenarios:
             for frag in scenario:
                 frag_meta = frag.metadata
+                file_id = frag_meta['file']['id']
+                number = frag_meta['fragment']['number']
                 frag_size = frag_meta['fragment']['size']
                 end_offset = current_offset + frag_size
-                image_offsets[frag_meta['file']['id']][frag_meta['fragment']['number']] = {'start': current_offset,
-                                                                                           'end': end_offset}
+                if number in image_offsets[file_id]:
+                    raise WoodblockError(
+                        f'Fragment {number} of file {file_id} is placed more than once in the image. '
+                        'The ground truth cannot represent a fragment at more than one location.')
+                image_offsets[file_id][number] = {'start': current_offset, 'end': end_offset}
                 current_offset += frag_size
                 if current_offset % self._block_size != 0:
                     current_offset += self._block_size - (current_offset % self._block_size)
@@ -352,6 +357,7 @@ def _assert_each_file_has_a_defined_num_of_frags(files, section):  # pylint: dis
 
 def _parse_layout_line(line: str) -> list:
     layout = list()
+    seen_file_fragments = set()
     for token in (x.strip() for x in line.split(',')):
         token = token.lower()
         if token == 'r':  # nosec
@@ -359,8 +365,13 @@ def _parse_layout_line(line: str) -> list:
         elif token == 'z':  # nosec
             layout.append({'type': 'zeroes'})
         else:
-            file_num, frag_num = _parse_file_definition(token)
-            layout.append({'type': 'file', 'file_num': int(file_num), 'frag_num': int(frag_num)})
+            file_num, frag_num = (int(x) for x in _parse_file_definition(token))
+            if (file_num, frag_num) in seen_file_fragments:
+                raise ImageConfigError(
+                    f'Fragment {frag_num} of file {file_num} is referenced more than once in the layout. '
+                    'The ground truth cannot represent a fragment at more than one location.')
+            seen_file_fragments.add((file_num, frag_num))
+            layout.append({'type': 'file', 'file_num': file_num, 'frag_num': frag_num})
     return layout
 
 

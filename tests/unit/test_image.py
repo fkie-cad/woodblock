@@ -4,6 +4,8 @@ from math import ceil
 import pytest
 
 import woodblock
+from woodblock.errors import WoodblockError
+from woodblock.file import File
 from woodblock.fragments import ZeroesFragment
 from woodblock.image import Image
 from woodblock.scenario import Scenario
@@ -86,3 +88,25 @@ class TestImageMetadata:
                                   'scenarios': [{'name': 'first scenario', 'files': []},
                                                 {'name': 'second scenario', 'files': []},
                                                 {'name': 'third scenario', 'files': []}]}
+
+    def test_that_a_fragment_placed_twice_raises_an_error(self):
+        fragment = File('512').as_fragment()
+        scenario = Scenario('duplicate')
+        scenario.add(fragment)
+        scenario.add(fragment)
+        image = Image()
+        image.add(scenario)
+        with pytest.raises(WoodblockError):
+            _ = image.metadata
+
+    def test_that_a_fragment_placed_twice_across_scenarios_raises_an_error(self):
+        fragment = File('512').as_fragment()
+        first = Scenario('first')
+        first.add(fragment)
+        second = Scenario('second')
+        second.add(fragment)
+        image = Image()
+        image.add(first)
+        image.add(second)
+        with pytest.raises(WoodblockError):
+            _ = image.metadata

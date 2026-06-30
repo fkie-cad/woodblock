@@ -203,6 +203,28 @@ class TestImageConfig:
         assert scenario['files'][0]['original']['type'] == 'filler'
         path.unlink()
 
+    @pytest.mark.parametrize('layout', ('1-1, 1-1', '1.1, 1.1', '1-1, 2-1, 1.1'))
+    def test_that_a_repeated_file_fragment_reference_raises_an_error(self, layout, configs_dir, general_section):
+        path = configs_dir / 'repeated-fragment-layout.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\nfrags file1 = 2\nfrags file2 = 1\n')
+            config.write(f'layout = {layout}\n')
+        with pytest.raises(ImageConfigError):
+            Image.from_config(pathlib.Path(path))
+        path.unlink()
+
+    @pytest.mark.parametrize('layout', ('R, R', 'Z, Z', 'R, Z, R, Z'))
+    def test_that_repeated_filler_references_are_accepted(self, layout, configs_dir, general_section):
+        path = configs_dir / 'repeated-filler-layout.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n')
+            config.write(f'layout = {layout}\n')
+        image = Image.from_config(pathlib.Path(path))
+        assert len(image.metadata['scenarios']) == 1
+        path.unlink()
+
     def test_that_a_malformed_multi_token_sequence_still_raises_an_error(self, configs_dir, general_section):
         path = configs_dir / 'malformed-sequence-layout.conf'
         with path.open('w') as config:
