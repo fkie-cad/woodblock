@@ -53,10 +53,15 @@ class FillerFragment:
     def __iter__(self):
         # Reset the full iteration state, not just the hasher, so that every iteration
         # reproduces the complete fragment. Without resetting _bytes_read a second iteration
-        # of a fragment larger than the chunk size would emit truncated data.
+        # of a fragment larger than the chunk size would emit truncated data. Resetting the
+        # data generator (when it supports it) makes every pass regenerate byte-identical
+        # data regardless of iteration order, so the recorded hash always matches the bytes
+        # written -- even for a plain FillerFragment with the default Random generator.
         self._bytes_read = 0
         self._chunk_size = min(self._size, self._orig_chunk_size)
         self._hasher = hashlib.sha256()
+        if hasattr(self._generate_data, 'reset'):
+            self._generate_data.reset()
         return self
 
     def __next__(self):
@@ -94,14 +99,10 @@ class RandomDataFragment(FillerFragment):
 
     def __init__(self, size, chunk_size=8192):
         self._rng = woodblock.datagen.Random()
+        # The base FillerFragment.__iter__ resets the data generator on every iteration, so the
+        # RNG is re-seeded to its initial seed each pass and the random data is reproduced
+        # byte-for-byte regardless of iteration order or of any other generator.
         super().__init__(size=size, data_generator=self._rng, chunk_size=chunk_size)
-
-    def __iter__(self):
-        # Re-seed the RNG to its initial seed at the start of every iteration so that each
-        # pass regenerates byte-identical random data, independent of how often the fragment
-        # is iterated or of any other generator.
-        self._rng.reset()
-        return super().__iter__()
 
 
 class FileFragment:

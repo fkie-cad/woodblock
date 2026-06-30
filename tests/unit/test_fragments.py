@@ -5,7 +5,7 @@ import pytest
 
 from woodblock.errors import WoodblockError
 from woodblock.file import File, get_corpus
-from woodblock.fragments import ZeroesFragment, RandomDataFragment, FileFragment
+from woodblock.fragments import FillerFragment, ZeroesFragment, RandomDataFragment, FileFragment
 
 
 class TestZeroesFragment:
@@ -166,6 +166,43 @@ class TestRandomDataFragment:
         recovered = b''.join(c for c in fragment)
         assert recovered == full
         assert len(recovered) == 16384
+
+
+class TestFillerFragment:
+    """The base FillerFragment with the default Random generator must be just as idempotent
+    as RandomDataFragment: its recorded hash has to match the bytes produced on every pass,
+    otherwise the ground truth would silently disagree with the image."""
+
+    @pytest.mark.parametrize('size', (512, 8192, 9000, 16384, 20000))
+    def test_that_re_iteration_yields_identical_random_data(self, size):
+        fragment = FillerFragment(size)
+        first = b''.join(c for c in fragment)
+        second = b''.join(c for c in fragment)
+        assert len(first) == size
+        assert first == second
+
+    @pytest.mark.parametrize('size', (512, 9000, 16384))
+    def test_that_the_data_matches_the_hash_on_every_pass(self, size):
+        fragment = FillerFragment(size)
+        for _ in range(3):
+            data = b''.join(c for c in fragment)
+            assert hashlib.sha256(data).hexdigest() == fragment.hash
+
+    def test_that_the_hash_matches_when_computed_before_iterating(self):
+        fragment = FillerFragment(9000)
+        expected_hash = fragment.hash
+        data = b''.join(c for c in fragment)
+        assert hashlib.sha256(data).hexdigest() == expected_hash
+
+    def test_that_two_fragments_are_independent(self):
+        frag_a = FillerFragment(16384)
+        frag_b = FillerFragment(16384)
+        a_first = b''.join(c for c in frag_a)
+        a_hash = frag_a.hash
+        b''.join(c for c in frag_b)  # iterate the other fragment in between
+        a_second = b''.join(c for c in frag_a)
+        assert a_second == a_first
+        assert frag_a.hash == a_hash
 
 
 class TestFileFragment:
