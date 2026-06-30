@@ -59,7 +59,7 @@ class File:
             raise WoodblockError('File contains no data!')
 
     def __str__(self):
-        return ': '.join((self.__repr__(), self._path))  # pragma: no cover
+        return ': '.join((self.__repr__(), str(self._path)))
 
     @property
     def hash(self) -> str:

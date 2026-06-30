@@ -41,6 +41,12 @@ class TestFile:
         with pytest.raises(FileNotFoundError):
             File(pathlib.Path('missing'))
 
+    def test_that_str_does_not_raise_and_contains_the_path(self, path_test_file_4k):
+        file = File(path_test_file_4k)
+        result = str(file)
+        assert str(file.path) in result
+        assert repr(file) in result
+
     @pytest.mark.parametrize('block_size,expected_frags', (
             (1, 4096), (2, 2048), (512, 8), (1024, 4), (2048, 2), (4096, 1), (4097, 1), (10000, 1)
     ))
