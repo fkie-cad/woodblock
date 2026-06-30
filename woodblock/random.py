@@ -22,8 +22,16 @@ class Randomness:
         """Set the seed.
 
         Args:
-            random_seed: The seed to use.
+            random_seed: The seed to use. Must be an integer in ``[0, 2**32)`` since this is the
+                range accepted by NumPy's RNG.
+
+        Raises:
+            ValueError: If ``random_seed`` is not an integer in ``[0, 2**32)``.
         """
+        if not isinstance(random_seed, int) or isinstance(random_seed, bool):
+            raise ValueError(f'Seed must be an integer in [0, 2**32), got {random_seed!r}.')
+        if not 0 <= random_seed < 2 ** 32:
+            raise ValueError(f'Seed must be an integer in [0, 2**32), got {random_seed}.')
         self._seed = random_seed
         random.seed(self._seed)
         np.random.seed(self._seed)
