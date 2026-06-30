@@ -167,10 +167,7 @@ class File:
             raise InvalidFragmentationPointError('Number of fragments is too large.')
 
     def _validate_fragmentation_points(self, fragmentation_points, block_size):
-        if self._size < block_size:
-            raise InvalidFragmentationPointError(
-                f'File is too small to be fragmented with a block size of {block_size}!'
-            )
+        self._ensure_fragmentable(block_size)
         if not all(isinstance(x, int) for x in fragmentation_points):
             raise InvalidFragmentationPointError('Fragmentation points have to be integers.')
         if 0 in fragmentation_points:
