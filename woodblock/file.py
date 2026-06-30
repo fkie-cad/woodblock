@@ -105,21 +105,8 @@ class File:
         if not fragmentation_points:
             return [self.as_fragment()]
         self._validate_fragmentation_points(fragmentation_points, block_size)
-        fragments = []
-        frag_points = sorted(fragmentation_points)
-        fragment_number = 2
-        len_frag_points = len(frag_points)
-        for i in range(len_frag_points):
-            if i == 0:
-                fragments.append(FileFragment(self, 1, 0, frag_points[0] * block_size))
-            if i < len_frag_points - 1:
-                fragments.append(
-                    FileFragment(self, fragment_number, frag_points[i] * block_size, frag_points[i + 1] * block_size)
-                )
-            if i == len_frag_points - 1:
-                fragments.append(FileFragment(self, len_frag_points + 1, frag_points[i] * block_size, self._size))
-            fragment_number += 1
-        return fragments
+        offsets = [0, *(p * block_size for p in sorted(fragmentation_points)), self._size]
+        return [FileFragment(self, i + 1, offsets[i], offsets[i + 1]) for i in range(len(offsets) - 1)]
 
     def fragment_randomly(self, num_fragments: int | None = None, block_size: int = 512) -> list:
         """Fragment the file at random fragmentation points.
@@ -132,25 +119,14 @@ class File:
             num_fragments: Number of fragments to create.
             block_size: Block size to use.
         """
-        if self._size < block_size:
-            raise InvalidFragmentationPointError(
-                f'File "{self.path}" is too small to be fragmented with a block size of {block_size}!'
-            )
-        blocks_in_file = math.floor(self._size / block_size)
+        self._ensure_fragmentable(block_size)
         if num_fragments is None:
-            num_fragments = random.randint(1, blocks_in_file)  # nosec
-        if num_fragments < 1:
-            raise InvalidFragmentationPointError('Number of fragments has to be at least 1.')
-        if num_fragments > blocks_in_file and not (
-            num_fragments == blocks_in_file + 1 and self._size % block_size != 0
-        ):
-            raise InvalidFragmentationPointError('Number of fragments is too large.')
+            num_fragments = random.randint(1, math.floor(self._size / block_size))  # nosec
+        self._validate_fragment_count(num_fragments, block_size)
         if num_fragments == 1:
             return [self.as_fragment()]
-        max_frag_point = blocks_in_file
-        if self._size % block_size != 0:
-            max_frag_point += 1
-        return self.fragment(random.sample(range(1, max_frag_point), num_fragments - 1), block_size)  # nosec
+        frag_points = random.sample(range(1, self.max_fragments(block_size)), num_fragments - 1)  # nosec
+        return self.fragment(frag_points, block_size)
 
     def fragment_evenly(self, num_fragments: int, block_size: int = 512) -> list:
         """Fragment the file evenly into ``num_fragment`` fragments.
@@ -162,20 +138,12 @@ class File:
             num_fragments: Number of fragments to create.
             block_size: Block size to use.
         """
-        blocks_in_file = math.floor(self._size / block_size)
-        if self._size < block_size:
-            raise InvalidFragmentationPointError(
-                f'File is too small to be fragmented with a block size of {block_size}!'
-            )
-        if num_fragments < 1:
-            raise InvalidFragmentationPointError('Number of fragments has to be at least 1.')
-        if num_fragments > blocks_in_file and not (
-            num_fragments == blocks_in_file + 1 and self._size % block_size != 0
-        ):
-            raise InvalidFragmentationPointError('Number of fragments is too large.')
+        self._ensure_fragmentable(block_size)
+        self._validate_fragment_count(num_fragments, block_size)
         if num_fragments == 1:
             return [self.as_fragment()]
 
+        blocks_in_file = math.floor(self._size / block_size)
         if num_fragments == blocks_in_file + 1 and self._size % block_size != 0:
             frag_points = range(1, blocks_in_file + 1)
         elif num_fragments == blocks_in_file:
@@ -185,6 +153,18 @@ class File:
                 int(x[-1]) for x in np.array_split(np.array(range(1, blocks_in_file + 1)), num_fragments)
             )[:-1]
         return self.fragment(frag_points, block_size)
+
+    def _ensure_fragmentable(self, block_size):
+        if self._size < block_size:
+            raise InvalidFragmentationPointError(
+                f'File "{self.path}" is too small to be fragmented with a block size of {block_size}!'
+            )
+
+    def _validate_fragment_count(self, num_fragments, block_size):
+        if num_fragments < 1:
+            raise InvalidFragmentationPointError('Number of fragments has to be at least 1.')
+        if num_fragments > self.max_fragments(block_size):
+            raise InvalidFragmentationPointError('Number of fragments is too large.')
 
     def _validate_fragmentation_points(self, fragmentation_points, block_size):
         if self._size < block_size:

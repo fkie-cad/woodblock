@@ -4,6 +4,7 @@ import hashlib
 from uuid import uuid4
 
 import woodblock.datagen
+import woodblock.file
 from woodblock.errors import WoodblockError
 
 

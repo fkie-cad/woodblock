@@ -160,24 +160,13 @@ def _parse_general_section(config: dict) -> dict:
         raise ImageConfigError('Mandatory "corpus" key in "general" section is not present.')
     general = {}
     general['corpus'] = section['corpus']
-    if 'block size' in section:
-        general['block size'] = int(section['block size'])
-    else:
-        general['block size'] = 512
+    general['block size'] = int(section.get('block size', 512))
     if 'seed' in section:
         general['seed'] = int(section['seed'])
-    general['min filler blocks'] = _get_min_filler_fragment_blocks(section) or 1
-    general['max filler blocks'] = _get_max_filler_fragment_blocks(section) or 10
+    general['min filler blocks'] = _get_number_of_blocks(section, 'min') or 1
+    general['max filler blocks'] = _get_number_of_blocks(section, 'max') or 10
     _reject_unknown_keys('general', section, _GENERAL_ALLOWED_KEYS)
     return general
-
-
-def _get_min_filler_fragment_blocks(section):
-    return _get_number_of_blocks(section, 'min')
-
-
-def _get_max_filler_fragment_blocks(section):
-    return _get_number_of_blocks(section, 'max')
 
 
 def _get_number_of_blocks(section: dict, min_or_max: str):
@@ -292,8 +281,8 @@ def _parse_fragment_sequence_layout(section_name: str, section: dict, num_filler
     file_fragments = _create_file_fragments(files)
     layout = _parse_layout_line(section['layout'])
 
-    min_filler_blocks = _get_min_filler_fragment_blocks(section) or num_filler_blocks[0]
-    max_filler_blocks = _get_max_filler_fragment_blocks(section) or num_filler_blocks[1]
+    min_filler_blocks = _get_number_of_blocks(section, 'min') or num_filler_blocks[0]
+    max_filler_blocks = _get_number_of_blocks(section, 'max') or num_filler_blocks[1]
     if min_filler_blocks < 1 or max_filler_blocks < 1 or min_filler_blocks > max_filler_blocks:
         raise ImageConfigError(
             f'Invalid min/max number of fillers blocks: min={min_filler_blocks}, max={max_filler_blocks}'
