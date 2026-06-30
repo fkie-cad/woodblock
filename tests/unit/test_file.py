@@ -5,6 +5,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 import pytest
 
 import woodblock
+import woodblock.random
 from woodblock.errors import WoodblockError, InvalidFragmentationPointError
 from woodblock.file import draw_files, File, intertwine_randomly, draw_fragmented_files
 from woodblock.fragments import FileFragment
@@ -328,6 +329,27 @@ class TestIntertwineRandomly:
         frags = intertwine_randomly(test_corpus_path, num_files, min_fragments=min_frags, max_fragments=max_frags)
         for i in range(1, len(frags)):
             assert frags[i - 1].metadata['file']['id'] != frags[i].metadata['file']['id']
+
+    @pytest.mark.parametrize('num_files, min_frags, max_frags, block_size', (
+            (2, 1, 1, 512), (2, 1, 10, 512), (2, 2, 2, 512), (2, 1, 100, 512), (2, 3, 6, 512),
+            (3, 1, 1, 512), (3, 1, 10, 512), (3, 2, 2, 512), (3, 2, 10, 512),
+            (4, 1, 1, 512), (4, 1, 10, 512), (4, 2, 10, 512), (4, 3, 3, 512),
+            (2, 1, 4, 64), (3, 1, 4, 128), (4, 1, 4, 256),
+    ))
+    def test_that_no_two_fragments_of_the_same_file_are_adjacent_across_many_seeds(
+            self, num_files, min_frags, max_frags, block_size, test_corpus_path):
+        # Property test for the documented guarantee of intertwine_randomly: in the
+        # returned sequence, no two consecutive fragments ever belong to the same file.
+        # Re-seeding per iteration makes failures reproducible and exercises the slot
+        # arithmetic over a wide slice of its input space (varied files and fragment counts).
+        for current_seed in range(200):
+            woodblock.random.seed(current_seed)
+            frags = intertwine_randomly(test_corpus_path, num_files, block_size=block_size,
+                                        min_fragments=min_frags, max_fragments=max_frags)
+            for i in range(1, len(frags)):
+                assert frags[i - 1].metadata['file']['id'] != frags[i].metadata['file']['id'], (
+                    f'adjacent fragments share a file: seed={current_seed} num_files={num_files} '
+                    f'min_frags={min_frags} max_frags={max_frags} block_size={block_size} index={i}')
 
     @pytest.mark.parametrize('min_frags, max_frags', ((2, 1), (3, 2), (10, 5)))
     def test_that_min_frags_larger_than_max_frags_raises_an_error(self, min_frags, max_frags, test_corpus_path):
