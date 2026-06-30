@@ -5,7 +5,7 @@ def long_description():
     with open('README.md') as fh:
         desc = fh.read()
     desc = desc.replace('documentation/docs/',
-                        'https://raw.githubusercontent.com/fkie-cad/woodblock/master/documentation/docs/')
+                        'https://raw.githubusercontent.com/fkie-cad/woodblock/main/documentation/docs/')
     return desc
 
 

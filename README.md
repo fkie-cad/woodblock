@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/fkie-cad/woodblock.svg?branch=master)](https://travis-ci.org/fkie-cad/woodblock)
-[![codecov](https://codecov.io/gh/fkie-cad/woodblock/branch/master/graph/badge.svg)](https://codecov.io/gh/fkie-cad/woodblock)
+[![Build Status](https://travis-ci.org/fkie-cad/woodblock.svg?branch=main)](https://travis-ci.org/fkie-cad/woodblock)
+[![codecov](https://codecov.io/gh/fkie-cad/woodblock/branch/main/graph/badge.svg)](https://codecov.io/gh/fkie-cad/woodblock)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/330a44b0155f4c989c581485799ae8e9)](https://app.codacy.com/app/0x4d4c/woodblock?utm_source=github.com&utm_medium=referral&utm_content=fkie-cad/woodblock&utm_campaign=Badge_Grade_Settings)
 [![Documentation Status](https://readthedocs.org/projects/woodblock/badge/?version=latest)](https://woodblock.readthedocs.io/en/latest/?badge=latest)
 
@@ -32,21 +32,21 @@ you would like to test.
 The following example should clarify these concepts. Consider for example the two
 **files** `A` and `B`.
 
-![two files](https://raw.githubusercontent.com/fkie-cad/woodblock/master/docs/images/two_files.png "two files, A and B")
+![two files](https://raw.githubusercontent.com/fkie-cad/woodblock/main/docs/images/two_files.png "two files, A and B")
 
 These files can be split into **fragments**. In the example, we split file `A` into two
 fragments, `A.1` and `A.2`. File `B` has not been fragmented.
 
-![two files fragmented](https://raw.githubusercontent.com/fkie-cad/woodblock/master/docs/images/two_files_fragmented.png "two files, A and B, A is fragmented")
+![two files fragmented](https://raw.githubusercontent.com/fkie-cad/woodblock/main/docs/images/two_files_fragmented.png "two files, A and B, A is fragmented")
 
 If we arrange the fragments of our files, we have a **scenario**:
 
-![example scenario](https://raw.githubusercontent.com/fkie-cad/woodblock/master/docs/images/scenario_example-01.png "a simple scenario")
+![example scenario](https://raw.githubusercontent.com/fkie-cad/woodblock/main/docs/images/scenario_example-01.png "a simple scenario")
 
 A scenario can be added to an **image**, which in turn can be written to disk. Or you can
 add another scenario to the image as shown below.
 
-![example image with two scenarios](https://raw.githubusercontent.com/fkie-cad/woodblock/master/docs/images/scenario_example-03.png "an image with two scenarios")
+![example image with two scenarios](https://raw.githubusercontent.com/fkie-cad/woodblock/main/docs/images/scenario_example-03.png "an image with two scenarios")
 
 Using Woodblock, you could create the images shown above using a simple configuration file:
 
