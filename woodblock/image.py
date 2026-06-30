@@ -10,6 +10,8 @@ from multimethod import multimethod
 
 import woodblock.datagen
 import woodblock.file
+import woodblock.fragments
+import woodblock.random
 from woodblock.errors import ImageConfigError
 from woodblock.scenario import Scenario
 
