@@ -911,5 +911,47 @@ woodblock.image
    “test-image.dd” and the metadata will be in “test-image.dd.json”.
 
 
+woodblock.visualization
+========================
+
+.. py:function:: woodblock.visualization.create_visualization(metadata, image=None, output=None, max_embed_bytes=16777216)
+
+   Build a self-contained, interactive HTML visualization of an image.
+
+   :param metadata: the image ground truth, either as a :code:`dict` or as a path to a ground truth :code:`.json` file
+   :param image: optional path to the generated image whose bytes feed the hex viewer
+   :param output: output path for the HTML file (defaults to the image/metadata path with ``.html`` appended)
+   :param int max_embed_bytes: maximum image size to embed directly into the HTML
+   :return: the path the HTML visualization was written to
+   :rtype: pathlib.Path
+
+   The resulting HTML file needs no web server and no internet connection; open it directly
+   in a browser. It shows a color-coded map of the image (one color per source file, with
+   fragments of the same file highlighted together on hover), a list of the contained files,
+   and a hex viewer for the bytes actually written to the image.
+
+   When an :code:`image` is given and it is no larger than :code:`max_embed_bytes`, its bytes
+   are embedded so the hex viewer works immediately. For larger images the bytes are not
+   embedded; instead the viewer lets the user select the image in the browser and reads it on
+   demand, so arbitrarily large images are supported.
+
+.. py:function:: woodblock.visualization.render_html(metadata, image_bytes=None, title=None)
+
+   Render the interactive HTML visualization and return it as a string.
+
+   :param dict metadata: the image ground truth metadata
+   :param bytes image_bytes: optional raw image bytes to embed for the hex viewer
+   :param str title: optional page title
+   :rtype: str
+
+.. py:function:: woodblock.visualization.build_view_model(metadata)
+
+   Turn image ground truth metadata into the flat view model consumed by the HTML front end.
+
+   :param dict metadata: the image ground truth metadata
+   :return: a JSON-serializable view model (image settings, files, fragments, and layout segments)
+   :rtype: dict
+
+
 .. _DFRWS 2007 File Image Layout page: http://old.dfrws.org/2007/challenge/layout.shtml
 .. _implement a custom string representation: https://stackoverflow.com/a/47452562

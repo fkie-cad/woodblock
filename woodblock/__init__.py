@@ -8,3 +8,4 @@ import woodblock.image
 import woodblock.random
 import woodblock.scenario
 import woodblock.utils
+import woodblock.visualization
