@@ -21,8 +21,8 @@ Consider the following configuration file from the :code:`examples/` folder:
    [Three files intertwined]
    layout = intertwine
    num files = 3
-   min fragments = 2
-   max fragments = 4
+   min frags = 2
+   max frags = 4
    
    [One file with missing middle]
    file1 = letters/ascii_letters

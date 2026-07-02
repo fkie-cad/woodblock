@@ -16,12 +16,13 @@ Here is a simple script illustrating the basic usage of the API:
    #!/usr/bin/env python3
    import pathlib
    import sys
-   
+
+   import woodblock
    from woodblock.file import File, draw_files
    from woodblock.fragments import RandomDataFragment, ZeroesFragment
    from woodblock.image import Image
    from woodblock.scenario import Scenario
-   
+
    HERE = pathlib.Path(__file__).absolute().parent
    
    
@@ -129,7 +130,7 @@ Files and Fragments
 *******************
 Files are always selected from a file corpus. Therefore, you have to specify
 the path to your file corpus before you can select any files. This is done
-using the :code:`woodblock.files.corpus` function. This function takes the path
+using the :code:`woodblock.file.corpus` function. This function takes the path
 to your file corpus as its only argument. An example call would look like this:
 
 .. code-block:: python
@@ -534,7 +535,7 @@ woodblock.file
    
    :code:`min_size` can be set to define a minimal file size of the files to be chosen.
 
-.. py:function:: woodblock.files.draw_fragmented_files(path=None, number_of_files=1, block_size=512, min_fragments=1, max_fragments=4)
+.. py:function:: woodblock.file.draw_fragmented_files(path=None, number_of_files=1, block_size=512, min_fragments=1, max_fragments=4)
    
    Choose :code:`number_of_files` random files from :code:`path` and fragment them randomly.
    
@@ -558,7 +559,7 @@ woodblock.file
    
    Note that there is no guarantee that a file is not chosen more than once.
 
-.. py:function:: woodblock.files.intertwine_randomly(path=None, number_of_files=2, block_size=512, min_fragments=1, max_fragments=4)
+.. py:function:: woodblock.file.intertwine_randomly(path=None, number_of_files=2, block_size=512, min_fragments=1, max_fragments=4)
    
    Choose :code:`number_of_files` random files from :code:`path` and intertwine them randomly.
    
@@ -667,7 +668,7 @@ woodblock.file
    The block size to be used when splitting the file can be specified using the
    :code:`block_size` argument, which defaults to 512.
    
-.. py:method:: woodblock.file.File.fragment_randomly(num_fragments, block_size=512)
+.. py:method:: woodblock.file.File.fragment_randomly(num_fragments=None, block_size=512)
    
    This method fragments the current file into :code:`num_fragments` fragments. The
    
@@ -779,7 +780,7 @@ woodblock.fragments
    
    :rtype: str
 
-.. py:method:: woodblock.fragments.FileFragment.metadata
+.. py:method:: woodblock.fragments.RandomDataFragment.metadata
    :property:
    
    Return the fragment metadata.
@@ -797,14 +798,14 @@ woodblock.fragments
 
 .. py:method:: woodblock.fragments.RandomDataFragment.size
    :property:
-   
+
    Return the size of the fragment.
-   
+
    :rtype: int
 
 .. py:class:: woodblock.fragments.ZeroesFragment(size, chunk_size=8192)
-   
-   A fragment filled with random bytes.
+
+   A fragment filled with zero bytes.
    
    :param int size: the size of the fragment
 
@@ -815,7 +816,7 @@ woodblock.fragments
    
    :rtype: str
 
-.. py:method:: woodblock.fragments.FileFragment.metadata
+.. py:method:: woodblock.fragments.ZeroesFragment.metadata
    :property:
    
    Return the fragment metadata.
@@ -859,10 +860,10 @@ woodblock.scenario
 
 .. py:method:: woodblock.scenario.Scenario.add(fragments)
    
-   The same as :code:`add(scenario)` but this time :code:`scenarios`
+   The same as :code:`add(fragment)` but this time :code:`fragments`
    is a list or tuple of fragments to be added to the scenario.
-   
-   :param fragments: a list fragments to add to the scenario
+
+   :param fragments: a list of fragments to add to the scenario
 
 .. py:method:: woodblock.scenario.Scenario.metadata
    :property:
@@ -875,7 +876,7 @@ woodblock.scenario
 woodblock.image
 ===============
 
-.. py:class:: woodblock.image.Image(block_size=512, padding_generator=woodblock.datagen.Random())
+.. py:class:: woodblock.image.Image(block_size=512, padding_generator=None)
    
    The :code:`Image` class represents a carving test image.
    
