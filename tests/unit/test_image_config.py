@@ -1,3 +1,4 @@
+import io
 import pathlib
 import string
 
@@ -288,6 +289,141 @@ class TestImageConfig:
         image = Image.from_config(pathlib.Path(path))
         assert len(image.metadata['scenarios']) == 1
         path.unlink()
+
+    def test_that_explicit_sizes_produce_exact_fragment_sizes(self, configs_dir, general_section):
+        path = configs_dir / 'explicit-sizes.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n'
+                         'file1 = 4096\n'
+                         'sizes file1 = 2, 3, 3\n'
+                         'layout = 1-1, 1-2, 1-3\n')
+        image = Image.from_config(pathlib.Path(path))
+        fragments = image.metadata['scenarios'][0]['files'][0]['fragments']
+        assert [f['size'] for f in fragments] == [1024, 1536, 1536]
+        path.unlink()
+
+    def test_that_explicit_sizes_compose_with_a_missing_middle(self, configs_dir, general_section):
+        path = configs_dir / 'explicit-sizes-missing-middle.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n'
+                         'file1 = 4096\n'
+                         'frags file1 = 3\n'
+                         'sizes file1 = 2, 3, 3\n'
+                         'layout = 1-1, 1-3\n')
+        image = Image.from_config(pathlib.Path(path))
+        fragments = image.metadata['scenarios'][0]['files'][0]['fragments']
+        sizes = {f['number']: f['size'] for f in fragments}
+        assert sorted(sizes) == [1, 3]
+        assert sizes[1] == 1024
+        assert sizes[3] == 1536
+        path.unlink()
+
+    def test_that_explicit_sizes_work_for_a_single_fragment_file(self, configs_dir, general_section):
+        path = configs_dir / 'explicit-sizes-single.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n'
+                         'file1 = 1024\n'
+                         'sizes file1 = 2\n'
+                         'layout = 1-1\n')
+        image = Image.from_config(pathlib.Path(path))
+        fragments = image.metadata['scenarios'][0]['files'][0]['fragments']
+        assert [f['size'] for f in fragments] == [1024]
+        path.unlink()
+
+    @pytest.mark.parametrize('kind, blocks', (('R', 5), ('Z', 3), ('r', 1), ('z', 8)))
+    def test_that_explicit_filler_sizes_are_honored(self, kind, blocks, configs_dir, general_section):
+        path = configs_dir / 'explicit-filler-sizes.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n'
+                         'frags file1 = 1\n'
+                         f'layout = 1-1, {kind}:{blocks}\n')
+        image = Image.from_config(pathlib.Path(path))
+        fillers = [f for f in image.metadata['scenarios'][0]['files'] if f['original']['type'] == 'filler']
+        assert len(fillers) == 1
+        assert fillers[0]['fragments'][0]['size'] == blocks * 512
+        path.unlink()
+
+    def test_that_the_scenario_gap_shifts_later_scenario_offsets(self, configs_dir):
+        path = configs_dir / 'scenario-gap.conf'
+        with path.open('w') as config:
+            config.write('[general]\nseed = 1\ncorpus = ../corpus/\nblock size = 512\nscenario gap = 2\n\n')
+            config.write('[s1]\nfile1 = 1024\nsizes file1 = 2\nlayout = 1-1\n\n')
+            config.write('[s2]\nfile1 = 1024\nsizes file1 = 2\nlayout = 1-1\n')
+        meta = Image.from_config(pathlib.Path(path)).metadata
+        # scenario 1 fills bytes [0, 1024); a 2-block (1024-byte) gap follows; scenario 2 starts at 2048.
+        s2_fragment = meta['scenarios'][1]['files'][0]['fragments'][0]
+        assert s2_fragment['image_offsets']['start'] == 2048
+        path.unlink()
+
+    def test_that_the_image_is_padded_to_the_target_size(self, configs_dir):
+        path = configs_dir / 'image-size.conf'
+        with path.open('w') as config:
+            config.write('[general]\nseed = 1\ncorpus = ../corpus/\nblock size = 512\nimage size = 10\n\n')
+            config.write('[s]\nfile1 = 1024\nsizes file1 = 2\nlayout = 1-1\n')
+        buffer = io.BytesIO()
+        Image.from_config(pathlib.Path(path)).write(buffer)
+        assert len(buffer.getvalue()) == 10 * 512
+        path.unlink()
+
+    @pytest.mark.parametrize('scenario_body', (
+            # number of sizes does not match frags
+            'file1 = 4096\nfrags file1 = 2\nsizes file1 = 2, 3, 3\nlayout = 1-1, 1-2\n',
+            # last size does not equal the file tail
+            'file1 = 4096\nsizes file1 = 2, 3\nlayout = 1-1, 1-2\n',
+            # a size of zero is not allowed
+            'file1 = 4096\nsizes file1 = 0, 8\nlayout = 1-1, 1-2\n',
+            # sizes have to be integers
+            'file1 = 4096\nsizes file1 = a, 8\nlayout = 1-1, 1-2\n',
+            # explicit filler size has to be >= 1
+            'file1 = 4096\nsizes file1 = 8\nlayout = 1-1, R:0\n',
+            # explicit filler size has to be an integer
+            'file1 = 4096\nsizes file1 = 8\nlayout = 1-1, R:x\n',
+    ))
+    def test_that_invalid_sizes_raise_an_error(self, scenario_body, configs_dir, general_section):
+        path = configs_dir / 'invalid-sizes.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n')
+            config.write(scenario_body)
+        with pytest.raises(ImageConfigError):
+            Image.from_config(pathlib.Path(path))
+        path.unlink()
+
+    @pytest.mark.parametrize('general_body', (
+            'image size = 1\n',   # smaller than the content
+            'scenario gap = -1\n',  # negative gap
+            'scenario gap = x\n',  # non-integer gap
+            'image size = 0\n',   # non-positive target size
+    ))
+    def test_that_invalid_general_sizing_keys_raise_an_error(self, general_body, configs_dir):
+        path = configs_dir / 'invalid-general-sizing.conf'
+        with path.open('w') as config:
+            config.write(f'[general]\nseed = 1\ncorpus = ../corpus/\nblock size = 512\n{general_body}\n')
+            config.write('[s]\nfile1 = 4096\nsizes file1 = 8\nlayout = 1-1\n')
+        with pytest.raises(ImageConfigError):
+            Image.from_config(pathlib.Path(path))
+        path.unlink()
+
+    def test_that_a_file_with_only_sizes_needs_no_frags(self, configs_dir, general_section):
+        path = configs_dir / 'sizes-without-frags.conf'
+        with path.open('w') as config:
+            config.write(general_section)
+            config.write('[scenario]\n'
+                         'file1 = 4096\n'
+                         'sizes file1 = 3, 5\n'
+                         'layout = 1-1, 1-2\n')
+        image = Image.from_config(pathlib.Path(path))
+        assert len(image.metadata['scenarios'][0]['files'][0]['fragments']) == 2
+        path.unlink()
+
+    def test_that_an_invalid_sizes_config_file_raises_an_error(self, configs_dir):
+        path = configs_dir / 'invalid' / 'sizes-exceed-file.conf'
+        with pytest.raises(ImageConfigError):
+            Image.from_config(path)
 
 
 @pytest.fixture

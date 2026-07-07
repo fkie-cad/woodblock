@@ -73,6 +73,28 @@ The following paragraphs describe the available options in more detail.
    The actual size of a filler fragments will be randomly chosen from the
    interval [`min filler blocks`, `max filler blocks`], including both endpoints.
 
+.. ini:option:: scenario gap
+
+   | **Required:** no
+   | **Default:** 0
+
+   The number of blocks of padding to insert between two consecutive scenarios.
+   By default (0), scenarios are placed back to back. Setting this to a positive
+   value inserts that many blocks of padding after every scenario except the
+   last one. The padding is made up of random data and is not attributed to any
+   file in the ground truth.
+
+.. ini:option:: image size
+
+   | **Required:** no
+   | **Default:** `None`
+
+   If set, the whole image is padded up to this number of blocks. The padding is
+   appended after the last scenario (and after all inter-scenario gaps), so it
+   does not change any fragment offset. The value has to be at least as large as
+   the image content; otherwise an error is raised. The trailing padding is made
+   up of random data.
+
 
 Scenario Sections
 =================
@@ -199,10 +221,50 @@ specific file, then you could modify the above configuration:
    frags file2 = 3
    layout = 1.1, 2.3, 2.2, 1.2, 2.1
 
-Adding the :code:`file2` option, tells Woodblock to choose the file 
+Adding the :code:`file2` option, tells Woodblock to choose the file
 :code:`path/to/some/file.jpg` as the second file. The path is relative
 to the file corpus defined in the :code:`[general]` section. The first
 file will still be chosen randomly.
+
+
+Specifying Exact Fragment Sizes
+********************************
+By default the size of the individual file fragments is chosen randomly. If you
+need full control over the layout (for instance to build reproducible benchmark
+images), you can pin the exact size of every fragment of a file using the
+:code:`sizes fileN` option. Its value is a comma-separated list of block counts,
+one per fragment:
+
+.. code-block:: ini
+
+   [A Scenario with Explicit Fragment Sizes]
+   file1 = path/to/some/file.jpg
+   sizes file1 = 3, 5
+   layout = 1-1, 1-2
+
+This splits the first file into a 3-block and a 5-block fragment. The sizes are
+given in blocks (using the :code:`block size` from the :code:`[general]`
+section) and have to be fully explicit: the last value has to match the
+remaining tail of the file so that the sum of all sizes covers the whole file.
+Woodblock raises an error if it does not.
+
+The :code:`sizes fileN` option composes with the "missing middle" pattern: the
+number of sizes determines the number of fragments the file is split into, while
+the :code:`layout` line decides which of those fragments actually end up in the
+image. For example, the following splits the file into three fragments of 2, 3,
+and 3 blocks but only places the first and the third one:
+
+.. code-block:: ini
+
+   [A Scenario with a Missing Middle]
+   file1 = path/to/some/file.jpg
+   frags file1 = 3
+   sizes file1 = 2, 3, 3
+   layout = 1-1, 1-3
+
+If you provide both :code:`frags fileN` and :code:`sizes fileN`, the number of
+sizes has to match the number of fragments. When :code:`sizes fileN` is given,
+:code:`frags fileN` is optional.
 
 
 Filler Fragments
@@ -231,6 +293,20 @@ This creates a scenario looking like this:
 
 We have the first fragment of the file, then some random data, then
 the second fragment, and finally some blocks filled with zeroes.
+
+If you need a filler of an exact size (for instance to create a fixed-size gap
+for bifragment gap carving), append the number of blocks to the filler token
+using a colon: :code:`R:8` creates a random-data filler of exactly 8 blocks and
+:code:`Z:4` creates a zero-filled filler of exactly 4 blocks. A sized filler
+ignores the :code:`min filler blocks` / :code:`max filler blocks` settings. This
+makes a bifragment gap a one-liner:
+
+.. code-block:: ini
+
+   [Bifragment Gap]
+   file1 = path/to/some/file.jpg
+   sizes file1 = 3, 5
+   layout = 1-1, R:8, 1-2
 
 
 Multiple Scenarios
@@ -263,10 +339,11 @@ Here is an example defining three scenarios:
 Again, the order of the scenarios in the resulting test image corresponds
 to the order of the definition in the configuration file.
 
-Note that Woodblock will not add any additional blocks between two scenarios.
+By default Woodblock will not add any additional blocks between two scenarios.
 That is, the first block of the second scenario will be next to the last block
-of the first scenario. If you would like to have filler blocks between two
-scenarios, you have to add filler blocks to the beginning or end of a scenario.
+of the first scenario. If you would like to have padding between two scenarios,
+set the :code:`scenario gap` option in the :code:`[general]` section (or add
+filler blocks to the beginning or end of a scenario).
 
 
 Option Reference
@@ -281,6 +358,8 @@ scenario section.
 +---------------------+----------+---------+-------------+-------------------------------------------------------------------------------------+
 | :code:`frags fileN` | no       | *n/a*   | manual      | Number of fragments to split the :code:`N`:sup:`th` into.                           |
 +---------------------+----------+---------+-------------+-------------------------------------------------------------------------------------+
+| :code:`sizes fileN` | no       | *n/a*   | manual      | Comma-separated list of block counts pinning the exact size of each fragment.       |
++---------------------+----------+---------+-------------+-------------------------------------------------------------------------------------+
 | :code:`layout`      | yes      | *n/a*   | all         | Defines the layout type. It can be either `intertwine` or a fragment specification. |
 +---------------------+----------+---------+-------------+-------------------------------------------------------------------------------------+
 | :code:`min frags`   | no       | 1       | intertwine  | Defines the minimal number of fragments per file.                                   |
@@ -290,7 +369,22 @@ scenario section.
 | :code:`num files`   | yes      | *n/a*   | intertwine  | Defines the number of files to intertwine.                                          |
 +---------------------+----------+---------+-------------+-------------------------------------------------------------------------------------+
 
+Within a :code:`layout` line, a filler token may carry an explicit block size
+using a colon suffix: :code:`R:N` creates a random-data filler and :code:`Z:N` a
+zero-filled filler of exactly :code:`N` blocks.
+
+The :code:`[general]` section additionally accepts the :code:`scenario gap` and
+:code:`image size` options described above to control inter-scenario padding and
+the total image size.
+
 Generating an Image
 ===================
 To generate an image based on a configuration file, use the :code:`woodblock`
 :ref:`command line tool <cli-tool>`.
+
+Complete, runnable configurations exercising the features described above live in
+the :code:`examples/configs/` directory of the source tree. In particular,
+:code:`bifragment-gap.conf`, :code:`benchmark-layout.conf`, and
+:code:`regression-image.conf` combine explicit fragment sizes, sized fillers,
+inter-scenario gaps, and a fixed image size. They use a relative :code:`corpus`
+path, so they generate images straight from a checkout.

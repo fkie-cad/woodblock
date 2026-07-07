@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import pathlib
@@ -9,6 +10,88 @@ from woodblock.image import Image
 from woodblock.scenario import Scenario
 
 HERE = pathlib.Path(__file__).absolute().parent
+
+
+def _explicit_layout_config(corpus_path):
+    return (
+        '[general]\n'
+        'seed = 4711\n'
+        f'corpus = {corpus_path.absolute()}\n'
+        'block size = 512\n'
+        'scenario gap = 4\n'
+        'image size = 32\n'
+        '\n'
+        '[bifragment gap]\n'
+        'file1 = 4096\n'
+        'sizes file1 = 3, 5\n'
+        'layout = 1-1, R:8, 1-2\n'
+        '\n'
+        '[explicit missing middle]\n'
+        'file1 = 4096\n'
+        'frags file1 = 3\n'
+        'sizes file1 = 2, 3, 3\n'
+        'layout = 1-1, Z:2, 1-3\n'
+    )
+
+
+class TestExplicitPlacementFromConfig:
+    """End-to-end coverage for explicit sizes, filler/gap sizes, scenario gaps and target image size."""
+
+    def test_that_all_explicit_placement_features_are_honored(self, test_corpus_path, tmp_path):
+        config = tmp_path / 'explicit.conf'
+        config.write_text(_explicit_layout_config(test_corpus_path))
+        image_path = tmp_path / 'image.dd'
+        Image.from_config(config).write(image_path)
+
+        # The whole image is padded up to the target size of 32 blocks.
+        assert image_path.stat().st_size == 32 * 512
+
+        data = image_path.read_bytes()
+        log = json.loads((tmp_path / 'image.dd.json').read_text())
+
+        fragments = {}
+        for scenario in log['scenarios']:
+            for file in scenario['files']:
+                for fragment in file['fragments']:
+                    fragments[(scenario['name'], fragment['number'], file['original']['type'])] = fragment
+                    # Every recorded offset range must hash to the recorded fragment hash.
+                    offsets = fragment['image_offsets']
+                    on_disk = data[offsets['start']:offsets['end']]
+                    assert hashlib.sha256(on_disk).hexdigest() == fragment['sha256']
+
+        # Exact file-fragment sizes.
+        assert fragments[('bifragment gap', 1, 'file')]['size'] == 3 * 512
+        assert fragments[('bifragment gap', 2, 'file')]['size'] == 5 * 512
+        assert fragments[('explicit missing middle', 1, 'file')]['size'] == 2 * 512
+        assert fragments[('explicit missing middle', 3, 'file')]['size'] == 3 * 512
+        # The missing middle fragment is not part of the image.
+        assert ('explicit missing middle', 2, 'file') not in fragments
+
+        # Exact filler/gap sizes.
+        assert fragments[('bifragment gap', 1, 'filler')]['size'] == 8 * 512
+        assert fragments[('explicit missing middle', 1, 'filler')]['size'] == 2 * 512
+
+        # The bifragment gap sits exactly between the two file fragments.
+        first = fragments[('bifragment gap', 1, 'file')]['image_offsets']
+        gap = fragments[('bifragment gap', 1, 'filler')]['image_offsets']
+        second = fragments[('bifragment gap', 2, 'file')]['image_offsets']
+        assert gap['start'] == first['end']
+        assert second['start'] == gap['end']
+
+        # The scenario gap of 4 blocks precedes the second scenario.
+        second_scenario_start = fragments[('explicit missing middle', 1, 'file')]['image_offsets']['start']
+        assert second_scenario_start == second['end'] + 4 * 512
+
+    def test_that_the_explicit_placement_image_is_reproducible(self, test_corpus_path, tmp_path):
+        config = tmp_path / 'explicit.conf'
+        config.write_text(_explicit_layout_config(test_corpus_path))
+
+        first = tmp_path / 'first.dd'
+        Image.from_config(config).write(first)
+        second = tmp_path / 'second.dd'
+        Image.from_config(config).write(second)
+
+        assert first.read_bytes() == second.read_bytes()
 
 
 class TestSimpleFragmentation:

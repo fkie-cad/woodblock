@@ -1,6 +1,7 @@
 """This module contains the Image class."""
 
 import configparser
+import itertools
 import json
 import pathlib
 import random
@@ -11,7 +12,7 @@ import woodblock.datagen
 import woodblock.file
 import woodblock.fragments
 import woodblock.random
-from woodblock.errors import ImageConfigError, WoodblockError
+from woodblock.errors import ImageConfigError, InvalidFragmentationPointError, WoodblockError
 from woodblock.scenario import Scenario
 
 
@@ -24,14 +25,20 @@ class Image:
     Args:
         block_size: Block size of the image.
         padding_generator: A data generator used to generate padding.
+        scenario_gap: Number of blocks of padding to insert between consecutive scenarios.
+        target_size: If set, pad the whole image up to this number of blocks.
     """
 
-    def __init__(self, block_size: int = 512, padding_generator=None):
+    def __init__(
+        self, block_size: int = 512, padding_generator=None, scenario_gap: int = 0, target_size: int | None = None
+    ):
         self._block_size = block_size
         self._scenarios = []
         if padding_generator is None:
             padding_generator = woodblock.datagen.Random()
         self._generate_padding = padding_generator
+        self._scenario_gap_bytes = scenario_gap * block_size
+        self._target_bytes = target_size * block_size if target_size is not None else None
 
     def add(self, scenario):
         """Add a ``Scenario`` to the image."""
@@ -55,7 +62,11 @@ class Image:
         if 'seed' in general:
             woodblock.random.seed(general['seed'])
         num_filler_blocks = (general['min filler blocks'], general['max filler blocks'])
-        image = Image()
+        image = Image(
+            block_size=general['block size'],
+            scenario_gap=general['scenario gap'],
+            target_size=general.get('image size'),
+        )
         for section in config.sections():
             if section != 'general':
                 scenario = _parse_scenario_section(
@@ -65,6 +76,11 @@ class Image:
                     block_size=general['block size'],
                 )
                 image.add(scenario)
+        if image._target_bytes is not None and image._target_bytes < image._content_size():
+            raise ImageConfigError(
+                f'"image size" ({general["image size"]} blocks) is smaller than the image content '
+                f'({image._content_size() // general["block size"]} blocks).'
+            )
         return image
 
     def write(self, target):
@@ -89,8 +105,19 @@ class Image:
         # output. User-supplied padding generators may be plain callables without a reset.
         if hasattr(self._generate_padding, 'reset'):
             self._generate_padding.reset()
-        for scenario in self._scenarios:
+        for scenario, gap in self._scenarios_with_trailing_gaps():
             self._write_scenario(target, scenario)
+            if gap:
+                target.write(self._generate_padding(gap))
+        if self._target_bytes is not None:
+            content_size = self._content_size()
+            if self._target_bytes < content_size:
+                raise WoodblockError(
+                    f'Target image size ({self._target_bytes} bytes) is smaller than the image '
+                    f'content ({content_size} bytes).'
+                )
+            if self._target_bytes > content_size:
+                target.write(self._generate_padding(self._target_bytes - content_size))
 
     @property
     def metadata(self):
@@ -101,7 +128,8 @@ class Image:
             'corpus': str(woodblock.file.get_corpus()),
             'scenarios': [s.metadata for s in self._scenarios],
         }
-        self._update_metadata_with_image_offsets(meta, self._compute_image_offsets())
+        image_offsets, _ = self._compute_image_offsets()
+        self._update_metadata_with_image_offsets(meta, image_offsets)
         return meta
 
     def _write_metadata(self, image_path: pathlib.Path):
@@ -109,6 +137,21 @@ class Image:
         metadata_path = image_path.with_name(image_path.name + '.json')
         with metadata_path.open('w') as file_handle:
             json.dump(self.metadata, file_handle)
+
+    def _scenarios_with_trailing_gaps(self):
+        """Yield ``(scenario, gap_bytes)`` pairs.
+
+        The inter-scenario gap is applied after every scenario except the last one. Both the write
+        path and the offset computation iterate through this helper so they can never disagree on
+        where (and how much) padding goes between scenarios.
+        """
+        last = len(self._scenarios) - 1
+        for index, scenario in enumerate(self._scenarios):
+            yield scenario, (0 if index == last else self._scenario_gap_bytes)
+
+    def _content_size(self):
+        """Return the size (in bytes) of the image content, i.e. all fragments plus inter-scenario gaps."""
+        return self._compute_image_offsets()[1]
 
     def _write_scenario(self, image, scenario):
         for fragment in scenario:
@@ -125,7 +168,7 @@ class Image:
     def _compute_image_offsets(self):
         image_offsets = defaultdict(dict)
         current_offset = 0
-        for scenario in self._scenarios:
+        for scenario, gap in self._scenarios_with_trailing_gaps():
             for frag in scenario:
                 frag_meta = frag.metadata
                 file_id = frag_meta['file']['id']
@@ -141,7 +184,8 @@ class Image:
                 current_offset += frag_size
                 if current_offset % self._block_size != 0:
                     current_offset += self._block_size - (current_offset % self._block_size)
-        return image_offsets
+            current_offset += gap
+        return image_offsets, current_offset
 
     @staticmethod
     def _update_metadata_with_image_offsets(meta, image_offsets):
@@ -165,8 +209,34 @@ def _parse_general_section(config: dict) -> dict:
         general['seed'] = int(section['seed'])
     general['min filler blocks'] = _get_number_of_blocks(section, 'min') or 1
     general['max filler blocks'] = _get_number_of_blocks(section, 'max') or 10
+    general['scenario gap'] = _parse_scenario_gap(section)
+    image_size = _parse_image_size(section)
+    if image_size is not None:
+        general['image size'] = image_size
     _reject_unknown_keys('general', section, _GENERAL_ALLOWED_KEYS)
     return general
+
+
+def _parse_scenario_gap(section: dict) -> int:
+    try:
+        gap = int(section.get('scenario gap', 0))
+    except ValueError as err:
+        raise ImageConfigError('"scenario gap" has to be an integer >= 0.') from err
+    if gap < 0:
+        raise ImageConfigError(f'Invalid value for "scenario gap": {gap}. It has to be >= 0.')
+    return gap
+
+
+def _parse_image_size(section: dict):
+    if 'image size' not in section:
+        return None
+    try:
+        size = int(section['image size'])
+    except ValueError as err:
+        raise ImageConfigError('"image size" has to be an integer >= 1.') from err
+    if size < 1:
+        raise ImageConfigError(f'Invalid value for "image size": {size}. It has to be >= 1.')
+    return size
 
 
 def _get_number_of_blocks(section: dict, min_or_max: str):
@@ -193,15 +263,23 @@ def _parse_scenario_section(section_name: str, section: dict, num_filler_blocks:
 
 _KEYWORD_LAYOUTS = ('intertwine',)
 
-_GENERAL_ALLOWED_KEYS = frozenset({'corpus', 'block size', 'seed', 'min filler blocks', 'max filler blocks'})
+_GENERAL_ALLOWED_KEYS = frozenset(
+    {'corpus', 'block size', 'seed', 'min filler blocks', 'max filler blocks', 'scenario gap', 'image size'}
+)
 _INTERTWINE_ALLOWED_KEYS = frozenset({'layout', 'num files', 'min frags', 'max frags'})
 _FRAGMENT_SEQUENCE_ALLOWED_KEYS = frozenset({'layout', 'min filler blocks', 'max filler blocks'})
 
 
 def _is_file_definition_key(key: str) -> bool:
-    """Return ``True`` for the dynamic ``fileN`` / ``frags fileN`` / ``frags_fileN`` keys."""
+    """Return ``True`` for the dynamic ``fileN`` / ``frags fileN`` / ``sizes fileN`` keys.
+
+    Both the space- and underscore-separated spellings (e.g. ``frags file1`` and ``frags_file1``)
+    are accepted.
+    """
     if key.startswith('frags file') or key.startswith('frags_file'):
         return key[len('frags file') :].isdigit()
+    if key.startswith('sizes file') or key.startswith('sizes_file'):
+        return key[len('sizes file') :].isdigit()
     if key.startswith('file'):
         return key[len('file') :].isdigit()
     return False
@@ -238,7 +316,8 @@ def _get_layout_type(section: dict) -> str:
 def _looks_like_fragment_sequence(layout: str) -> bool:
     if ',' in layout:
         return True
-    return layout in ('r', 'z') or '.' in layout or '-' in layout  # nosec
+    kind = layout.partition(':')[0]
+    return kind in ('r', 'z') or '.' in layout or '-' in layout  # nosec
 
 
 def _parse_intertwine_layout(section_name: str, section: dict, block_size: int):
@@ -265,20 +344,20 @@ def _parse_fragment_sequence_layout(section_name: str, section: dict, num_filler
     scenario = Scenario(section_name)
     files = dict()
     for key, value in section.items():
-        if key.startswith('file'):
-            file_number = int(key[4:])
-            if file_number in files:
-                files[file_number]['path'] = value
-            else:
-                files[file_number] = {'frags': None, 'path': value}
+        if key.startswith('sizes file') or key.startswith('sizes_file'):
+            file_number = int(key[10:])
+            files.setdefault(file_number, {'frags': None, 'path': None, 'sizes': None})
+            files[file_number]['sizes'] = _parse_sizes_value(key, value)
         elif key.startswith('frags_file') or key.startswith('frags file'):
             file_number = int(key[10:])
-            if file_number in files:
-                files[file_number]['frags'] = int(value)
-            else:
-                files[file_number] = {'frags': int(value), 'path': None}
+            files.setdefault(file_number, {'frags': None, 'path': None, 'sizes': None})
+            files[file_number]['frags'] = int(value)
+        elif key.startswith('file'):
+            file_number = int(key[4:])
+            files.setdefault(file_number, {'frags': None, 'path': None, 'sizes': None})
+            files[file_number]['path'] = value
     _assert_each_file_has_a_defined_num_of_frags(files, section_name)
-    file_fragments = _create_file_fragments(files)
+    file_fragments = _create_file_fragments(files, block_size)
     layout = _parse_layout_line(section['layout'])
 
     min_filler_blocks = _get_number_of_blocks(section, 'min') or num_filler_blocks[0]
@@ -290,13 +369,25 @@ def _parse_fragment_sequence_layout(section_name: str, section: dict, num_filler
     for fragment in layout:
         if fragment['type'] == 'file':
             scenario.add(file_fragments[fragment['file_num']][fragment['frag_num']])
-        elif fragment['type'] == 'random':
-            size = _get_filler_fragment_size(min_filler_blocks, max_filler_blocks, block_size)
-            scenario.add(woodblock.fragments.RandomDataFragment(size))
-        elif fragment['type'] == 'zeroes':
-            size = _get_filler_fragment_size(min_filler_blocks, max_filler_blocks, block_size)
-            scenario.add(woodblock.fragments.ZeroesFragment(size))
+        elif fragment['type'] in ('random', 'zeroes'):
+            if fragment['size_blocks'] is not None:
+                size = fragment['size_blocks'] * block_size
+            else:
+                size = _get_filler_fragment_size(min_filler_blocks, max_filler_blocks, block_size)
+            filler_cls = (
+                woodblock.fragments.RandomDataFragment
+                if fragment['type'] == 'random'
+                else woodblock.fragments.ZeroesFragment
+            )
+            scenario.add(filler_cls(size))
     return scenario
+
+
+def _parse_sizes_value(key: str, value: str) -> list:
+    try:
+        return [int(x) for x in value.split(',')]
+    except ValueError as err:
+        raise ImageConfigError(f'"{key}" has to be a comma-separated list of integers.') from err
 
 
 def _parse_frags_nums(section_name: str, section: dict) -> tuple:
@@ -323,30 +414,69 @@ def _get_filler_fragment_size(min_blocks: int, max_blocks: int, block_size: int)
     return random.randint(min_blocks, max_blocks) * block_size  # nosec
 
 
-def _create_file_fragments(files):
+def _create_file_fragments(files, block_size):
     fragments = {}
     for file_num in files:
         num_frags = files[file_num]['frags']
         file_path = files[file_num]['path']
-        if file_path is not None:
+        sizes = files[file_num]['sizes']
+        if sizes is not None:
+            frags = _fragment_with_explicit_sizes(file_num, file_path, sizes, num_frags, block_size)
+        elif file_path is not None:
             if (woodblock.file.get_corpus() / file_path).is_dir():
                 frags = woodblock.file.draw_fragmented_files(
-                    file_path, number_of_files=1, min_fragments=num_frags, max_fragments=num_frags
+                    file_path,
+                    number_of_files=1,
+                    block_size=block_size,
+                    min_fragments=num_frags,
+                    max_fragments=num_frags,
                 )[0]
             else:
-                frags = woodblock.file.File(file_path).fragment_randomly(num_fragments=num_frags)
+                frags = woodblock.file.File(file_path).fragment_randomly(num_fragments=num_frags, block_size=block_size)
         else:
             frags = woodblock.file.draw_fragmented_files(
-                number_of_files=1, min_fragments=num_frags, max_fragments=num_frags
+                number_of_files=1, block_size=block_size, min_fragments=num_frags, max_fragments=num_frags
             )[0]
         fragments[file_num] = {i + 1: f for i, f in enumerate(frags)}
     return fragments
 
 
+def _fragment_with_explicit_sizes(file_num, file_path, sizes, num_frags, block_size):
+    if any(not isinstance(size, int) or size < 1 for size in sizes):
+        raise ImageConfigError(f'All values of "sizes file{file_num}" have to be integers >= 1.')
+    if num_frags is not None and num_frags != len(sizes):
+        raise ImageConfigError(
+            f'"frags file{file_num}" ({num_frags}) does not match the number of "sizes file{file_num}" ({len(sizes)}).'
+        )
+    file = _select_file_for_explicit_sizes(file_path, sizes, block_size)
+    points = list(itertools.accumulate(sizes[:-1]))
+    file_tail = file.max_fragments(block_size) - (points[-1] if points else 0)
+    if sizes[-1] != file_tail:
+        raise ImageConfigError(
+            f'The last value of "sizes file{file_num}" ({sizes[-1]}) does not match the remaining file '
+            f'tail ({file_tail} blocks).'
+        )
+    try:
+        return file.fragment(points, block_size)
+    except InvalidFragmentationPointError as err:
+        raise ImageConfigError(f'Invalid "sizes file{file_num}": {err}') from err
+
+
+def _select_file_for_explicit_sizes(file_path, sizes, block_size):
+    min_size = sum(sizes) * block_size
+    if file_path is None:
+        return woodblock.file.draw_files(number_of_files=1, min_size=min_size)[0]
+    if (woodblock.file.get_corpus() / file_path).is_dir():
+        return woodblock.file.draw_files(file_path, number_of_files=1, min_size=min_size)[0]
+    return woodblock.file.File(file_path)
+
+
 def _assert_each_file_has_a_defined_num_of_frags(files, section):
     for num, file in files.items():
-        if file['frags'] is None:
-            raise ImageConfigError(f'No "frags file{num} definition is missing in section "[{section}]".')
+        if file['frags'] is None and file['sizes'] is None:
+            raise ImageConfigError(
+                f'Neither "frags file{num}" nor "sizes file{num}" is defined in section "[{section}]".'
+            )
 
 
 def _parse_layout_line(line: str) -> list:
@@ -354,10 +484,11 @@ def _parse_layout_line(line: str) -> list:
     seen_file_fragments = set()
     for token in (x.strip() for x in line.split(',')):
         token = token.lower()
-        if token == 'r':  # nosec
-            layout.append({'type': 'random'})
-        elif token == 'z':  # nosec
-            layout.append({'type': 'zeroes'})
+        kind, has_size, arg = token.partition(':')
+        if kind == 'r':  # nosec
+            layout.append({'type': 'random', 'size_blocks': _parse_filler_size(arg, has_size)})
+        elif kind == 'z':  # nosec
+            layout.append({'type': 'zeroes', 'size_blocks': _parse_filler_size(arg, has_size)})
         else:
             file_num, frag_num = (int(x) for x in _parse_file_definition(token))
             if (file_num, frag_num) in seen_file_fragments:
@@ -368,6 +499,19 @@ def _parse_layout_line(line: str) -> list:
             seen_file_fragments.add((file_num, frag_num))
             layout.append({'type': 'file', 'file_num': file_num, 'frag_num': frag_num})
     return layout
+
+
+def _parse_filler_size(arg: str, has_size: str):
+    """Parse the optional ``:N`` block-size suffix of a filler token (e.g. ``R:8``)."""
+    if not has_size:
+        return None
+    try:
+        size = int(arg)
+    except ValueError as err:
+        raise ImageConfigError(f'Invalid filler size "{arg}". It has to be an integer >= 1.') from err
+    if size < 1:
+        raise ImageConfigError(f'Invalid filler size: {size}. It has to be an integer >= 1.')
+    return size
 
 
 def _parse_file_definition(token: str):
