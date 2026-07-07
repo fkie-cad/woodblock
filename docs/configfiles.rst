@@ -30,7 +30,7 @@ Here is a simple example with one scenario:
 
 The following paragraphs describe the available options in more detail.
 
-.. ini:option:: block size
+.. describe:: block size
    
    | **Required:** no
    | **Default:** 512
@@ -40,14 +40,14 @@ The following paragraphs describe the available options in more detail.
    scenarios will be aligned and padded according to this size. The padding
    will be made up of random data.
 
-.. ini:option:: corpus
+.. describe:: corpus
    
    | **Required:** yes
    | **Default:** `None`  
    
    The path (relative to the configuration file) to the corpus to be used.
 
-.. ini:option:: seed
+.. describe:: seed
    
    | **Required:** no
    | **Default:** randomly generated integer
@@ -55,7 +55,7 @@ The following paragraphs describe the available options in more detail.
    The seed for the random number generator. If you do not specify a seed
    explicitly, Woodblock will generate a random seed for you.
 
-.. ini:option:: min filler blocks
+.. describe:: min filler blocks
    
    | **Required:** no
    | **Default:** 1
@@ -64,7 +64,7 @@ The following paragraphs describe the available options in more detail.
    The actual size of a filler fragments will be randomly chosen from the
    interval [`min filler blocks`, `max filler blocks`], including both endpoints.
 
-.. ini:option:: max filler blocks
+.. describe:: max filler blocks
    
    | **Required:** no
    | **Default:** 10
@@ -73,7 +73,7 @@ The following paragraphs describe the available options in more detail.
    The actual size of a filler fragments will be randomly chosen from the
    interval [`min filler blocks`, `max filler blocks`], including both endpoints.
 
-.. ini:option:: scenario gap
+.. describe:: scenario gap
 
    | **Required:** no
    | **Default:** 0
@@ -84,7 +84,7 @@ The following paragraphs describe the available options in more detail.
    last one. The padding is made up of random data and is not attributed to any
    file in the ground truth.
 
-.. ini:option:: image size
+.. describe:: image size
 
    | **Required:** no
    | **Default:** `None`
@@ -107,7 +107,7 @@ file corresponds to the order of the scenarios in the image.
 The supported and required options of a scenario section depend on the layout
 type of the scenario you want to generate.
 
-.. ini:option:: layout
+.. describe:: layout
    
    | **Required:** yes
    | **Default:** None
@@ -142,12 +142,12 @@ the following properties.
 - The fragments of each file will be in order, i.e. fragment 1 comes before fragment 2 which comes before fragment 3 and so on.
 - No two fragments of the same file will be adjacent to one other.
 
-.. ini:option:: layout = intertwine
+.. describe:: layout = intertwine
    
    In order to have Woodblock create an intertwined scenario for you, the
    :code:`layout` option has to be set to :code:`intertwine`.
 
-.. ini:option:: num files
+.. describe:: num files
    
    | **Required:** yes
    | **Default:** `None`
@@ -157,14 +157,14 @@ the following properties.
    randomly pick files which can be fragmented according to your :code:`min frags` and
    :code:`max frags` constraints.
 
-.. ini:option:: min frags
+.. describe:: min frags
    
    | **Required:** no
    | **Default:** 1
    
    This option defines the minimal number of fragments to split a file into.
 
-.. ini:option:: max frags
+.. describe:: max frags
    
    | **Required:** no
    | **Default:** 4

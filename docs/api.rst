@@ -594,15 +594,13 @@ woodblock.file
    
    :param pathlib.Path path: a path relative to the specified corpus
 
-.. py:method:: woodblock.file.File.hash
-   :property:
+.. py:property:: woodblock.file.File.hash
    
    Return the SHA-256 hash of the file contents as hexadecimal string.
    
    :rtype: str
 
-.. py:method:: woodblock.file.File.id
-   :property:
+.. py:property:: woodblock.file.File.id
    
    Returns the ID of the file.
    
@@ -613,15 +611,13 @@ woodblock.file
    the same file of the corpus. This is useful, if you want to add the same file
    twice to the same scenario.
 
-.. py:method:: woodblock.file.File.path
-   :property:
+.. py:property:: woodblock.file.File.path
    
    Returns the path of the file relative to the corpus path.
    
    :rtype: pathlib.Path
 
-.. py:method:: woodblock.file.File.size
-   :property:
+.. py:property:: woodblock.file.File.size
    
    Returns the size of the file.
    
@@ -706,15 +702,13 @@ woodblock.fragments
    define the offsets where the fragment starts and ends (relative to the
    original file).
 
-.. py:method:: woodblock.fragments.FileFragment.hash
-   :property:
+.. py:property:: woodblock.fragments.FileFragment.hash
    
    Return the SHA-256 digest as hexadecimal string.
    
    :rtype: str
 
-.. py:method:: woodblock.fragments.FileFragment.metadata
-   :property:
+.. py:property:: woodblock.fragments.FileFragment.metadata
    
    Return the fragment metadata.
    
@@ -725,8 +719,7 @@ woodblock.fragments
    information about the current fragment (e.g. the hash, the size, and the fragment
    number with respect to the original file).
 
-.. py:method:: woodblock.fragments.FileFragment.size
-   :property:
+.. py:property:: woodblock.fragments.FileFragment.size
    
    Return the size of the fragment.
    
@@ -743,15 +736,13 @@ woodblock.fragments
    :code:`data_generator` has to be an
    object compatible with the :ref:`data generator interface <data-generator-interface>`.
 
-.. py:method:: woodblock.fragments.FillerFragment.hash
-   :property:
+.. py:property:: woodblock.fragments.FillerFragment.hash
    
    Return the SHA-256 digest as hexadecimal string.
    
    :rtype: str
 
-.. py:method:: woodblock.fragments.FillerFragment.metadata
-   :property:
+.. py:property:: woodblock.fragments.FillerFragment.metadata
    
    Return the fragment metadata.
    
@@ -766,8 +757,7 @@ woodblock.fragments
    the values of the original file and the fragment will be mostly identical.
    The file metadata is included only for consistency with the :code:`FileFragment`.
 
-.. py:method:: woodblock.fragments.FillerFragment.size
-   :property:
+.. py:property:: woodblock.fragments.FillerFragment.size
    
    Return the size of the fragment.
    
@@ -779,15 +769,13 @@ woodblock.fragments
    
    :param int size: the size of the fragment
 
-.. py:method:: woodblock.fragments.RandomDataFragment.hash
-   :property:
+.. py:property:: woodblock.fragments.RandomDataFragment.hash
    
    Return the SHA-256 digest as hexadecimal string.
    
    :rtype: str
 
-.. py:method:: woodblock.fragments.RandomDataFragment.metadata
-   :property:
+.. py:property:: woodblock.fragments.RandomDataFragment.metadata
    
    Return the fragment metadata.
    
@@ -802,8 +790,7 @@ woodblock.fragments
    the values of the original file and the fragment will be mostly identical.
    The file metadata is included only for consistency with the :code:`FileFragment`.
 
-.. py:method:: woodblock.fragments.RandomDataFragment.size
-   :property:
+.. py:property:: woodblock.fragments.RandomDataFragment.size
 
    Return the size of the fragment.
 
@@ -815,15 +802,13 @@ woodblock.fragments
    
    :param int size: the size of the fragment
 
-.. py:method:: woodblock.fragments.ZeroesFragment.hash
-   :property:
+.. py:property:: woodblock.fragments.ZeroesFragment.hash
    
    Return the SHA-256 digest as hexadecimal string.
    
    :rtype: str
 
-.. py:method:: woodblock.fragments.ZeroesFragment.metadata
-   :property:
+.. py:property:: woodblock.fragments.ZeroesFragment.metadata
    
    Return the fragment metadata.
    
@@ -838,8 +823,7 @@ woodblock.fragments
    the values of the original file and the fragment will be mostly identical.
    The file metadata is included only for consistency with the :code:`FileFragment`.
 
-.. py:method:: woodblock.fragments.ZeroesFragment.size
-   :property:
+.. py:property:: woodblock.fragments.ZeroesFragment.size
    
    Return the size of the fragment.
    
@@ -865,14 +849,14 @@ woodblock.scenario
    :param fragment: the fragment to add to the scenario
 
 .. py:method:: woodblock.scenario.Scenario.add(fragments)
-   
+   :no-index:
+
    The same as :code:`add(fragment)` but this time :code:`fragments`
    is a list or tuple of fragments to be added to the scenario.
 
    :param fragments: a list of fragments to add to the scenario
 
-.. py:method:: woodblock.scenario.Scenario.metadata
-   :property:
+.. py:property:: woodblock.scenario.Scenario.metadata
    
    Return a dict containing metadata about the scenario.
    
