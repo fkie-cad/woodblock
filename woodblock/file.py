@@ -305,7 +305,7 @@ def intertwine_randomly(
         free_slots = len(frags) + 1
         max_frags = min(max_fragments, file.max_fragments(block_size), free_slots)
         num_frags = random.randint(min_frags, max_frags)  # nosec
-        current_file_frags = list(reversed(file.fragment_randomly(num_frags, block_size)))
+        current_file_frags = list(file.fragment_randomly(num_frags, block_size))
         _insert_at_slots(frags, current_file_frags, _select_free_slots(free_slots, num_frags))
     return frags
 
